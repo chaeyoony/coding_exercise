@@ -1,0 +1,13 @@
+id,name,department_id,salary,hire_date,manager_id
+1,Minjun Kim,1,5200,2019-03-04,
+2,Seoyeon Lee,1,4800,2020-07-15,1
+3,Jiho Park,1,4300,2021-01-11,1
+4,Hayoon Choi,2,3900,2018-11-20,
+5,Doyun Jung,2,3500,2021-06-01,4
+6,Soyul Kang,2,3500,2022-02-14,4
+7,Yujin Yoon,3,3700,2017-09-05,
+8,Eunwoo Han,3,3200,2023-03-20,7
+9,Chaewon Shin,1,6100,2016-05-30,
+10,Taeyang Oh,2,4100,2019-12-09,4
+11,Nayeon Seo,1,4600,2022-08-22,9
+12,Jun Bae,,3000,2023-10-02,

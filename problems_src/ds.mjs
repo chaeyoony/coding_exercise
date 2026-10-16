@@ -1,0 +1,238 @@
+// 데이터사이언스: 데이터 분석(pandas, 표 채점 + SQL 교차검증) / 통계 / 머신러닝(scikit-learn) / 딥러닝(numpy 로 원리 구현)
+const T = { track: 'ds' };
+const t = (call, expected, visible = false) => ({ call, expected, visible });
+const P = '# 데이터프레임이 이미 준비되어 있어요. 정답을 result 변수에 담아 주세요.\n';
+
+export default [
+  // ---------------- 데이터 분석 (pandas) ----------------
+  {
+    ...T, id: 'ds-001', category: '데이터 분석', level: 1, title: '열 선택하기',
+    datasets: ['employees'],
+    desc: `<p>데이터프레임 <code>employees</code>에서 <code>name</code>과 <code>salary</code> 두 열만 골라 <code>result</code>에 담으세요.</p>`,
+    starter: P + `result = employees\n`, ordered: false,
+    solution: `result = employees[['name', 'salary']]`,
+    hint: '<p>여러 열을 고를 때는 대괄호 두 겹: <code>df[[\'열1\', \'열2\']]</code></p>',
+    cross: { lang: 'sql', code: `SELECT name, salary FROM employees;` },
+  },
+  {
+    ...T, id: 'ds-002', category: '데이터 분석', level: 1, title: '조건으로 행 고르기',
+    datasets: ['employees'],
+    desc: `<p>급여(<code>salary</code>)가 <b>4000 이상</b>인 직원의 <code>name</code>, <code>salary</code>를 <b>급여가 높은 순서</b>로 <code>result</code>에 담으세요.</p>`,
+    starter: P + `result = None\n`, ordered: true,
+    solution: `result = employees[employees['salary'] >= 4000][['name', 'salary']].sort_values('salary', ascending=False)`,
+    hint: '<p>조건 필터: <code>df[df["열"] &gt;= 값]</code> → 열 선택 → <code>sort_values("열", ascending=False)</code></p>',
+    cross: { lang: 'sql', code: `SELECT name, salary FROM employees WHERE salary >= 4000 ORDER BY salary DESC;` },
+  },
+  {
+    ...T, id: 'ds-003', category: '데이터 분석', level: 2, title: '새 열 만들기',
+    datasets: ['orders'],
+    desc: `<p><code>orders</code>의 각 주문에 대해 주문 금액 <code>total</code> (= <code>quantity × unit_price</code>)을 계산해, <code>order_id</code>와 <code>total</code> 두 열을 <code>order_id</code> 순서대로 <code>result</code>에 담으세요.</p>`,
+    starter: P + `result = None\n`, ordered: true,
+    solution: `df = orders.copy()\ndf['total'] = df['quantity'] * df['unit_price']\nresult = df[['order_id', 'total']].sort_values('order_id')`,
+    hint: '<p>열끼리 곱하면 행마다 계산돼요: <code>df["a"] * df["b"]</code>. 새 열은 <code>df["새이름"] = ...</code></p>',
+    cross: { lang: 'sql', code: `SELECT order_id, quantity * unit_price AS total FROM orders ORDER BY order_id;` },
+  },
+  {
+    ...T, id: 'ds-004', category: '데이터 분석', level: 2, title: '제품별 판매 수량 (groupby)',
+    datasets: ['orders'],
+    desc: `<p>제품(<code>product</code>)별 총 판매 수량을 구해 <code>product</code>, <code>total_qty</code> 두 열로 <code>result</code>에 담으세요. <code>product</code> 알파벳 순서입니다.</p>`,
+    starter: P + `result = None\n`, ordered: true,
+    solution: `result = orders.groupby('product')['quantity'].sum().reset_index(name='total_qty')`,
+    hint: '<p><code>groupby("열")["합칠열"].sum()</code> 뒤에 <code>.reset_index()</code>를 붙이면 일반 표 모양이 돼요. groupby는 기본으로 그룹 이름 순서로 정렬해요.</p>',
+    cross: { lang: 'sql', code: `SELECT product, SUM(quantity) AS total_qty FROM orders GROUP BY product ORDER BY product;` },
+  },
+  {
+    ...T, id: 'ds-005', category: '데이터 분석', level: 3, title: '월별 매출',
+    datasets: ['orders'],
+    desc: `<p>월별 매출(<code>quantity × unit_price</code>의 합)을 구해 <code>month</code>(예: <code>2024-01</code>), <code>revenue</code> 두 열로 <code>result</code>에 담으세요. 월 오름차순입니다.</p>`,
+    starter: P + `result = None\n`, ordered: true,
+    solution: `df = orders.copy()\ndf['month'] = df['order_date'].str[:7]\ndf['revenue'] = df['quantity'] * df['unit_price']\nresult = df.groupby('month')['revenue'].sum().reset_index()`,
+    hint: "<p>날짜 문자열의 앞 7글자가 월이에요: <code>df['order_date'].str[:7]</code></p>",
+    cross: { lang: 'sql', code: `SELECT TO_CHAR(order_date, 'YYYY-MM') AS month, SUM(quantity * unit_price) AS revenue FROM orders GROUP BY 1 ORDER BY 1;` },
+  },
+  {
+    ...T, id: 'ds-006', category: '데이터 분석', level: 3, title: '도시별 매출 (merge)',
+    datasets: ['orders', 'customers'],
+    desc: `<p><code>orders</code>와 <code>customers</code>를 합쳐서 <b>고객 도시(city)별</b> 총 매출(<code>quantity × unit_price</code>의 합)을 구하세요. 열은 <code>city</code>, <code>revenue</code>이고 <b>매출이 큰 순서</b>입니다.</p>`,
+    starter: P + `result = None\n`, ordered: true,
+    solution: `df = orders.merge(customers, on='customer_id')\ndf['revenue'] = df['quantity'] * df['unit_price']\nresult = df.groupby('city')['revenue'].sum().reset_index().sort_values('revenue', ascending=False)`,
+    hint: '<p><code>orders.merge(customers, on="customer_id")</code> 로 표를 합친 뒤 groupby 해요.</p>',
+    cross: { lang: 'sql', datasets: ['orders', 'customers'], code: `SELECT c.city, SUM(o.quantity * o.unit_price) AS revenue FROM orders o JOIN customers c ON o.customer_id = c.customer_id GROUP BY c.city ORDER BY revenue DESC;` },
+  },
+  {
+    ...T, id: 'ds-007', category: '데이터 분석', level: 3, title: '주문이 없는 고객',
+    datasets: ['orders', 'customers'],
+    desc: `<p>한 번도 주문하지 않은 고객의 <code>name</code>을 <code>result</code>에 담으세요. (열은 <code>name</code> 하나)</p>`,
+    starter: P + `result = None\n`, ordered: false,
+    solution: `result = customers[~customers['customer_id'].isin(orders['customer_id'])][['name']]`,
+    hint: '<p><code>isin()</code>은 "목록에 들어 있는가"를 검사하고, 앞에 <code>~</code>를 붙이면 반대(들어 있지 않음)가 돼요.</p>',
+    cross: { lang: 'sql', datasets: ['orders', 'customers'], code: `SELECT name FROM customers WHERE customer_id NOT IN (SELECT customer_id FROM orders);` },
+  },
+  {
+    ...T, id: 'ds-008', category: '데이터 분석', level: 4, title: '부서별 최고 급여 직원',
+    datasets: ['employees'],
+    desc: `<p>부서(<code>department_id</code>, 비어 있는 직원 제외)마다 <b>급여가 가장 높은 직원</b> 한 명을 찾아 <code>department_id</code>, <code>name</code>, <code>salary</code> 열로 <code>result</code>에 담으세요. <code>department_id</code> 오름차순입니다. (각 부서의 최고 급여는 한 명뿐이에요)</p>`,
+    starter: P + `result = None\n`, ordered: true,
+    solution: `df = employees.dropna(subset=['department_id'])\nidx = df.groupby('department_id')['salary'].idxmax()\nresult = df.loc[idx, ['department_id', 'name', 'salary']].sort_values('department_id')`,
+    hint: '<p><code>groupby(...)["salary"].idxmax()</code>는 그룹별로 최댓값이 있는 행의 위치를 알려줘요. 그 위치로 <code>df.loc[...]</code>를 하면 돼요.</p>',
+    cross: { lang: 'sql', code: `SELECT e.department_id, e.name, e.salary FROM employees e WHERE e.department_id IS NOT NULL AND e.salary = (SELECT MAX(x.salary) FROM employees x WHERE x.department_id = e.department_id) ORDER BY e.department_id;` },
+  },
+
+  // ---------------- 통계 ----------------
+  {
+    ...T, id: 'ds-101', category: '통계', level: 1, title: '평균 구하기',
+    packages: ['numpy'],
+    desc: `<p>숫자 리스트 <code>nums</code>의 평균을 <b>소수 둘째 자리까지 반올림</b>해서 돌려주는 <code>mean_value(nums)</code>를 만드세요. 리스트는 비어 있지 않아요.</p>`,
+    starter: `def mean_value(nums):\n    pass\n`,
+    solution: `def mean_value(nums):\n    return round(sum(nums) / len(nums), 2)\n`,
+    hint: '<p>평균 = 합계 ÷ 개수. 파이썬에는 <code>sum()</code>, <code>len()</code>, <code>round(값, 자리수)</code>가 있어요.</p>',
+    tests: [t('mean_value([1, 2, 3, 4])', 2.5, true), t('mean_value([10])', 10), t('mean_value([2, 3, 5])', 3.33, true), t('mean_value([-1, 1])', 0), t('mean_value([1, 2])', 1.5)],
+  },
+  {
+    ...T, id: 'ds-102', category: '통계', level: 2, title: '중앙값 구하기',
+    desc: `<p>숫자 리스트의 <b>중앙값</b>을 돌려주는 <code>median_value(nums)</code>를 만드세요. 개수가 짝수면 가운데 두 값의 평균이에요. 리스트는 비어 있지 않고, 정렬되어 있지 않을 수 있어요.</p>`,
+    starter: `def median_value(nums):\n    pass\n`,
+    solution: `def median_value(nums):\n    s = sorted(nums)\n    n = len(s)\n    mid = n // 2\n    if n % 2 == 1:\n        return s[mid]\n    return (s[mid - 1] + s[mid]) / 2\n`,
+    hint: '<p>먼저 <code>sorted()</code>로 정렬하세요. 개수가 홀수면 가운데 값, 짝수면 가운데 두 값의 평균이에요.</p>',
+    tests: [t('median_value([3, 1, 2])', 2, true), t('median_value([4, 1, 3, 2])', 2.5, true), t('median_value([5])', 5), t('median_value([10, 2, 8, 4, 6])', 6), t('median_value([1, 100])', 50.5)],
+  },
+  {
+    ...T, id: 'ds-103', category: '통계', level: 2, title: '표준편차 구하기',
+    packages: ['numpy'],
+    desc: `<p>숫자 리스트의 <b>모표준편차</b>(분산을 구할 때 <b>n</b>으로 나누는 방식)를 <b>소수 셋째 자리까지 반올림</b>해 돌려주는 <code>std_value(nums)</code>를 만드세요.</p>
+<p>표준편차 = √(각 값과 평균의 차이를 제곱한 값들의 평균). <code>numpy</code>를 써도 되고 직접 계산해도 좋아요.</p>`,
+    starter: `import numpy as np\n\n\ndef std_value(nums):\n    pass\n`,
+    solution: `import numpy as np\n\n\ndef std_value(nums):\n    return round(float(np.std(nums)), 3)\n`,
+    hint: '<p><code>np.std(nums)</code>는 기본으로 n으로 나누는 모표준편차예요. 직접 구하려면 평균 → 차이의 제곱 → 평균 → 제곱근 순서예요.</p>',
+    tests: [t('std_value([2, 4, 4, 4, 5, 5, 7, 9])', 2.0, true), t('std_value([1, 1, 1])', 0), t('std_value([1, 2, 3, 4, 5])', 1.414, true), t('std_value([10, 20])', 5.0)],
+  },
+  {
+    ...T, id: 'ds-104', category: '통계', level: 3, title: '상관계수',
+    packages: ['numpy'],
+    desc: `<p>길이가 같은 두 리스트 <code>x</code>, <code>y</code>의 <b>피어슨 상관계수</b>를 소수 셋째 자리까지 반올림해 돌려주는 <code>correlation(x, y)</code>를 만드세요.</p>
+<p>힌트: <code>np.corrcoef(x, y)[0, 1]</code></p>`,
+    starter: `import numpy as np\n\n\ndef correlation(x, y):\n    pass\n`,
+    solution: `import numpy as np\n\n\ndef correlation(x, y):\n    return round(float(np.corrcoef(x, y)[0, 1]), 3)\n`,
+    hint: '<p><code>np.corrcoef(x, y)</code>는 2×2 표를 돌려줘요. 우리가 필요한 값은 <code>[0, 1]</code> 위치예요.</p>',
+    tests: [t('correlation([1, 2, 3, 4, 5], [2, 4, 6, 8, 10])', 1.0, true), t('correlation([1, 2, 3, 4, 5], [10, 8, 6, 4, 2])', -1.0, true), t('correlation([1, 2, 3, 4, 5], [2, 1, 4, 3, 5])', 0.8), t('correlation([1, 2, 3, 4], [1, 3, 2, 4])', 0.8)],
+  },
+  {
+    ...T, id: 'ds-105', category: '통계', level: 3, title: '표준화 (z-score)',
+    packages: ['numpy'],
+    desc: `<p>숫자 리스트의 각 값을 <b>z-score</b>로 바꾼 리스트를 돌려주는 <code>zscore(nums)</code>를 만드세요. 각 값을 소수 둘째 자리까지 반올림합니다.</p>
+<p>z = (값 − 평균) ÷ 모표준편차 (표준편차가 0인 경우는 나오지 않아요)</p>`,
+    starter: `import numpy as np\n\n\ndef zscore(nums):\n    pass\n`,
+    solution: `import numpy as np\n\n\ndef zscore(nums):\n    a = np.array(nums, dtype=float)\n    z = (a - a.mean()) / a.std()\n    return [round(float(v), 2) for v in z]\n`,
+    hint: '<p>numpy 배열은 리스트와 달리 <code>a - a.mean()</code> 처럼 한 번에 모든 값에 계산이 적용돼요.</p>',
+    tests: [t('zscore([1, 2, 3])', [-1.22, 0.0, 1.22], true), t('zscore([0, 10])', [-1.0, 1.0]), t('zscore([2, 4, 4, 4, 5, 5, 7, 9])', [-1.5, -0.5, -0.5, -0.5, 0.0, 0.0, 1.0, 2.0]), t('zscore([5, 15, 25])', [-1.22, 0.0, 1.22])],
+  },
+
+  // ---------------- 머신러닝 ----------------
+  {
+    ...T, id: 'ds-201', category: '머신러닝', level: 2, title: '학습/테스트 데이터 나누기',
+    packages: ['scikit-learn'],
+    desc: `<p>모델을 평가하려면 데이터를 학습용과 테스트용으로 나눠야 해요. <code>split_sizes(n, test_ratio)</code>는 0부터 n−1까지의 숫자 n개를 <code>sklearn.model_selection.train_test_split</code>(<code>random_state=0</code>)으로 나눈 뒤 <b><code>[학습 데이터 개수, 테스트 데이터 개수]</code></b> 리스트를 돌려줍니다. 테스트 비율은 <code>test_size=test_ratio</code>로 지정해요.</p>`,
+    starter: `from sklearn.model_selection import train_test_split\n\n\ndef split_sizes(n, test_ratio):\n    data = list(range(n))\n    pass\n`,
+    solution: `from sklearn.model_selection import train_test_split\n\n\ndef split_sizes(n, test_ratio):\n    data = list(range(n))\n    train, test = train_test_split(data, test_size=test_ratio, random_state=0)\n    return [len(train), len(test)]\n`,
+    hint: '<p><code>train, test = train_test_split(data, test_size=..., random_state=0)</code> 처럼 두 덩어리를 받아요. 테스트 개수는 올림되어 계산돼요.</p>',
+    tests: [t('split_sizes(10, 0.2)', [8, 2], true), t('split_sizes(100, 0.25)', [75, 25], true), t('split_sizes(7, 0.3)', [4, 3]), t('split_sizes(20, 0.5)', [10, 10])],
+  },
+  {
+    ...T, id: 'ds-202', category: '머신러닝', level: 2, title: '선형회귀로 직선 찾기',
+    packages: ['scikit-learn'],
+    desc: `<p>점들이 정확히 한 직선 위에 있을 때, 선형회귀로 <b>기울기와 절편</b>을 찾는 <code>fit_line(xs, ys)</code>를 만드세요. <code>sklearn.linear_model.LinearRegression</code>을 사용하고, <b><code>[기울기, 절편]</code></b> 리스트를 소수 둘째 자리까지 반올림해 돌려주세요.</p>
+<p><code>xs</code>는 1차원 리스트라서, 학습하려면 <code>X = [[x] for x in xs]</code> 처럼 2차원으로 바꿔야 해요.</p>`,
+    starter: `from sklearn.linear_model import LinearRegression\n\n\ndef fit_line(xs, ys):\n    pass\n`,
+    solution: `from sklearn.linear_model import LinearRegression\n\n\ndef fit_line(xs, ys):\n    X = [[x] for x in xs]\n    model = LinearRegression()\n    model.fit(X, ys)\n    return [round(float(model.coef_[0]), 2) + 0.0, round(float(model.intercept_), 2) + 0.0]\n`,
+    hint: '<p>학습: <code>model.fit(X, y)</code> / 기울기: <code>model.coef_[0]</code> / 절편: <code>model.intercept_</code></p>',
+    tests: [t('fit_line([1, 2, 3, 4], [3, 5, 7, 9])', [2.0, 1.0], true), t('fit_line([0, 1, 2], [5, 5, 5])', [0.0, 5.0]), t('fit_line([1, 2, 3], [2, 4, 6])', [2.0, 0.0]), t('fit_line([1, 2, 3, 4, 5], [10, 8, 6, 4, 2])', [-2.0, 12.0], true)],
+  },
+  {
+    ...T, id: 'ds-203', category: '머신러닝', level: 3, title: '결정 트리로 합격 예측',
+    packages: ['scikit-learn'], datasets: ['students'],
+    desc: `<p>데이터프레임 <code>students</code>에는 공부 시간(<code>hours_studied</code>)과 합격 여부(<code>passed</code>, 1=합격)가 들어 있어요.</p>
+<p><code>predict_pass(hours)</code>는 <code>students</code>의 <code>hours_studied</code>로 <code>passed</code>를 학습한 <code>DecisionTreeClassifier(random_state=0)</code>를 만들어, 공부 시간 <code>hours</code>인 학생의 합격 여부(<b>0 또는 1 정수</b>)를 예측해 돌려줍니다.</p>`,
+    starter: `from sklearn.tree import DecisionTreeClassifier\n\n\ndef predict_pass(hours):\n    # students 데이터프레임을 사용하세요\n    pass\n`,
+    solution: `from sklearn.tree import DecisionTreeClassifier\n\n\ndef predict_pass(hours):\n    X = students[['hours_studied']]\n    y = students['passed']\n    model = DecisionTreeClassifier(random_state=0)\n    model.fit(X, y)\n    return int(model.predict([[hours]])[0])\n`,
+    hint: '<p>특성은 2차원이어야 해서 <code>students[["hours_studied"]]</code>처럼 대괄호를 두 겹 써요. 예측할 때도 <code>model.predict([[hours]])</code> 처럼 2차원으로 넣고, 결과 배열의 첫 값을 꺼내요. sklearn이 특성 이름 경고를 낼 수 있지만 무시해도 돼요.</p>',
+    tests: [t('predict_pass(6)', 1, true), t('predict_pass(1)', 0, true), t('predict_pass(0.5)', 0), t('predict_pass(3.0)', 0), t('predict_pass(5.0)', 1), t('predict_pass(4.2)', 1), t('predict_pass(6.5)', 1)],
+  },
+  {
+    ...T, id: 'ds-204', category: '머신러닝', level: 2, title: '정확도 계산하기',
+    desc: `<p>분류 모델의 성능 지표인 <b>정확도(accuracy)</b>는 "맞힌 개수 ÷ 전체 개수"예요. 실제 정답 리스트 <code>y_true</code>와 예측 리스트 <code>y_pred</code>를 받아 정확도를 <b>소수 둘째 자리까지 반올림</b>해 돌려주는 <code>accuracy(y_true, y_pred)</code>를 만드세요. (sklearn 없이 직접 계산)</p>`,
+    starter: `def accuracy(y_true, y_pred):\n    pass\n`,
+    solution: `def accuracy(y_true, y_pred):\n    correct = 0\n    for a, b in zip(y_true, y_pred):\n        if a == b:\n            correct += 1\n    return round(correct / len(y_true), 2)\n`,
+    hint: '<p><code>zip(y_true, y_pred)</code>로 두 리스트를 짝지어 한 쌍씩 비교할 수 있어요.</p>',
+    tests: [t('accuracy([1, 0, 1, 1], [1, 0, 0, 1])', 0.75, true), t('accuracy([1, 1], [1, 1])', 1.0, true), t('accuracy([0, 0, 0], [1, 1, 1])', 0.0), t('accuracy([1, 0, 1], [1, 1, 1])', 0.67)],
+  },
+  {
+    ...T, id: 'ds-205', category: '머신러닝', level: 4, title: 'K-최근접 이웃 직접 구현',
+    desc: `<p>1차원 점들의 위치 <code>xs</code>와 각 점의 클래스 <code>ys</code>가 있을 때, 새 점 <code>q</code>와 <b>가장 가까운 k개</b>의 점들 중 <b>다수결</b>로 클래스를 정하는 <code>knn_predict(xs, ys, q, k)</code>를 만드세요. 클래스는 0 또는 1이고, k는 홀수라서 동점은 없어요.</p>`,
+    starter: `def knn_predict(xs, ys, q, k):\n    pass\n`,
+    solution: `def knn_predict(xs, ys, q, k):\n    pairs = sorted(zip(xs, ys), key=lambda p: abs(p[0] - q))\n    nearest = [label for _, label in pairs[:k]]\n    return 1 if sum(nearest) > k / 2 else 0\n`,
+    hint: '<p>(위치, 클래스) 쌍을 <code>abs(위치 - q)</code> 기준으로 정렬하고, 앞의 k개의 클래스 합이 k의 절반보다 크면 1이에요.</p>',
+    tests: [
+      t('knn_predict([1, 2, 3, 10, 11, 12], [0, 0, 0, 1, 1, 1], 5, 3)', 0, true),
+      t('knn_predict([1, 2, 3, 10, 11, 12], [0, 0, 0, 1, 1, 1], 9, 3)', 1, true),
+      t('knn_predict([1, 2, 3, 10, 11, 12], [0, 0, 0, 1, 1, 1], 6.6, 3)', 1),
+      t('knn_predict([1, 2, 3, 10, 11, 12], [0, 0, 0, 1, 1, 1], 6, 1)', 0),
+      t('knn_predict([1, 2, 3, 10, 11, 12], [0, 0, 0, 1, 1, 1], 8, 1)', 1)],
+  },
+
+  // ---------------- 딥러닝 (numpy로 원리 구현) ----------------
+  {
+    ...T, id: 'ds-301', category: '딥러닝', level: 1, title: '시그모이드 함수',
+    packages: ['numpy'],
+    desc: `<p>신경망에서 자주 쓰는 활성화 함수 <b>시그모이드</b>는 σ(x) = 1 / (1 + e<sup>−x</sup>) 입니다. 이 값을 소수 넷째 자리까지 반올림해 돌려주는 <code>sigmoid(x)</code>를 만드세요.</p>`,
+    starter: `import numpy as np\n\n\ndef sigmoid(x):\n    pass\n`,
+    solution: `import numpy as np\n\n\ndef sigmoid(x):\n    return round(float(1 / (1 + np.exp(-x))), 4)\n`,
+    hint: '<p><code>np.exp(값)</code>이 e의 거듭제곱이에요.</p>',
+    tests: [t('sigmoid(0)', 0.5, true), t('sigmoid(2)', 0.8808, true), t('sigmoid(-2)', 0.1192), t('sigmoid(10)', 1.0)],
+  },
+  {
+    ...T, id: 'ds-302', category: '딥러닝', level: 1, title: 'ReLU 함수',
+    packages: ['numpy'],
+    desc: `<p><b>ReLU</b>는 음수는 0으로, 양수는 그대로 두는 활성화 함수예요. 숫자 리스트 <code>xs</code>의 모든 값에 ReLU를 적용한 <b>리스트</b>를 돌려주는 <code>relu(xs)</code>를 만드세요.</p>`,
+    starter: `import numpy as np\n\n\ndef relu(xs):\n    pass\n`,
+    solution: `import numpy as np\n\n\ndef relu(xs):\n    return np.maximum(0, np.array(xs, dtype=float)).tolist()\n`,
+    hint: '<p><code>np.maximum(0, 배열)</code>은 각 값과 0 중 큰 값을 골라요. 리스트로 바꾸려면 <code>.tolist()</code></p>',
+    tests: [t('relu([-1, 0, 2])', [0, 0, 2], true), t('relu([-1.5, 2.5])', [0, 2.5], true), t('relu([])', []), t('relu([3, 4])', [3, 4])],
+  },
+  {
+    ...T, id: 'ds-303', category: '딥러닝', level: 2, title: '소프트맥스',
+    packages: ['numpy'],
+    desc: `<p><b>소프트맥스</b>는 점수 리스트를 합이 1인 확률로 바꿔요: softmax(x)<sub>i</sub> = e<sup>x<sub>i</sub></sup> / Σ e<sup>x<sub>j</sub></sup>. 각 확률을 소수 셋째 자리까지 반올림한 리스트를 돌려주는 <code>softmax(xs)</code>를 만드세요.</p>
+<p>⚠ 값이 아주 크면(예: 1000) e<sup>x</sup>가 너무 커져서 계산이 깨져요. <b>모든 값에서 최댓값을 먼저 빼고</b> 계산하면 결과는 같으면서 안전해요.</p>`,
+    starter: `import numpy as np\n\n\ndef softmax(xs):\n    pass\n`,
+    solution: `import numpy as np\n\n\ndef softmax(xs):\n    a = np.array(xs, dtype=float)\n    e = np.exp(a - a.max())\n    return [round(float(v), 3) for v in e / e.sum()]\n`,
+    hint: '<p><code>e = np.exp(a - a.max())</code> 후 <code>e / e.sum()</code> 입니다.</p>',
+    tests: [t('softmax([0, 0])', [0.5, 0.5], true), t('softmax([1, 2, 3])', [0.09, 0.245, 0.665], true), t('softmax([2, 2, 2, 2])', [0.25, 0.25, 0.25, 0.25]), t('softmax([1000, 1000])', [0.5, 0.5]), t('softmax([10, 0])', [1.0, 0.0])],
+  },
+  {
+    ...T, id: 'ds-304', category: '딥러닝', level: 2, title: '평균제곱오차 (MSE)',
+    packages: ['numpy'],
+    desc: `<p>회귀 문제의 손실 함수인 <b>평균제곱오차</b>는 (예측 − 정답)을 제곱해서 평균 낸 값이에요. 소수 넷째 자리까지 반올림해 돌려주는 <code>mse(y_true, y_pred)</code>를 만드세요.</p>`,
+    starter: `import numpy as np\n\n\ndef mse(y_true, y_pred):\n    pass\n`,
+    solution: `import numpy as np\n\n\ndef mse(y_true, y_pred):\n    diff = np.array(y_pred, dtype=float) - np.array(y_true, dtype=float)\n    return round(float(np.mean(diff ** 2)), 4)\n`,
+    hint: '<p>배열끼리 빼고, <code>** 2</code>로 제곱하고, <code>np.mean()</code>으로 평균을 내요.</p>',
+    tests: [t('mse([1, 2, 3], [1, 2, 3])', 0.0, true), t('mse([1, 2, 3], [2, 3, 4])', 1.0, true), t('mse([0, 0], [3, 4])', 12.5), t('mse([1, 2, 3, 4], [1, 2, 3, 8])', 4.0)],
+  },
+  {
+    ...T, id: 'ds-305', category: '딥러닝', level: 3, title: '뉴런 하나의 순전파',
+    packages: ['numpy'],
+    desc: `<p>인공 뉴런 하나는 입력 <code>x</code>와 가중치 <code>w</code>를 곱해 모두 더하고 편향 <code>b</code>를 더한 값 z = Σ(w<sub>i</sub>·x<sub>i</sub>) + b 를 시그모이드에 통과시켜요. 출력 σ(z)를 소수 넷째 자리까지 반올림해 돌려주는 <code>neuron(x, w, b)</code>를 만드세요.</p>`,
+    starter: `import numpy as np\n\n\ndef neuron(x, w, b):\n    pass\n`,
+    solution: `import numpy as np\n\n\ndef neuron(x, w, b):\n    z = np.dot(np.array(x, dtype=float), np.array(w, dtype=float)) + b\n    return round(float(1 / (1 + np.exp(-z))), 4)\n`,
+    hint: '<p><code>np.dot(x, w)</code>는 같은 위치끼리 곱해서 더한 값(내적)이에요.</p>',
+    tests: [t('neuron([1, 2], [0.5, -0.25], 0)', 0.5, true), t('neuron([1, 0], [2, 0], 0)', 0.8808, true), t('neuron([0, 0], [1, 1], -1)', 0.2689), t('neuron([3, -1], [1, 2], 0.5)', 0.8176)],
+  },
+  {
+    ...T, id: 'ds-306', category: '딥러닝', level: 4, title: '경사하강법 한 스텝',
+    desc: `<p>뉴런 ŷ = w·x + b 의 손실을 L = (ŷ − y)² 라 할 때, 기울기는 ∂L/∂w = 2(ŷ − y)·x, ∂L/∂b = 2(ŷ − y) 예요. 학습률 <code>lr</code>로 <b>한 번 업데이트한</b> <code>[새 w, 새 b]</code>를 소수 넷째 자리까지 반올림해 돌려주는 <code>gradient_step(w, b, x, y, lr)</code>를 만드세요.</p>
+<p>업데이트 규칙: w ← w − lr·∂L/∂w, b ← b − lr·∂L/∂b</p>`,
+    starter: `def gradient_step(w, b, x, y, lr):\n    pass\n`,
+    solution: `def gradient_step(w, b, x, y, lr):\n    y_hat = w * x + b\n    err = y_hat - y\n    dw = 2 * err * x\n    db = 2 * err\n    return [round(w - lr * dw, 4), round(b - lr * db, 4)]\n`,
+    hint: '<p>순서: ① ŷ 계산 → ② 오차 = ŷ − y → ③ 기울기 dw, db 계산 → ④ 기울기의 반대 방향으로 이동.</p>',
+    tests: [t('gradient_step(0, 0, 1, 2, 0.1)', [0.4, 0.4], true), t('gradient_step(1, 0, 2, 2, 0.1)', [1.0, 0.0], true), t('gradient_step(0.5, 0.5, 2, 3, 0.05)', [0.8, 0.65]), t('gradient_step(2, 1, 1, 0, 0.1)', [1.4, 0.4])],
+  },
+];

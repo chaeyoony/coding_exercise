@@ -1,0 +1,15 @@
+movie_id,title,genre,release_year,rating,votes,director_id
+1,Midnight Train,Drama,2015,8.1,1200,1
+2,Space Harvest,SciFi,2018,7.4,3400,2
+3,The Last Garden,Drama,2020,8.6,2100,1
+4,Laugh Track,Comedy,2016,6.2,900,3
+5,Quantum Drift,SciFi,2021,7.9,5200,2
+6,Paper Moon City,Animation,2019,8.3,4100,4
+7,Iron Harbor,Action,2017,6.8,2800,5
+8,Silent Orchard,Drama,2022,7.2,600,1
+9,Double Booked,Comedy,2019,7.0,1500,3
+10,Edge of Dawn,Action,2020,7.6,3900,5
+11,Little Comets,Animation,2022,8.0,2500,4
+12,Hollow Signal,SciFi,2023,,0,2
+13,Sunday Brunch,Comedy,2021,5.9,700,3
+14,Steel Rain,Action,2023,7.1,1800,5
