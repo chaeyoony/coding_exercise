@@ -1,5 +1,7 @@
 # 코딩 연습장
 
+👉 **[연습 사이트 열기](https://chaeyoony.github.io/coding_exercise/)** (GitHub Pages를 켠 뒤에 열려요: Settings → Pages → Source를 "GitHub Actions"로)
+
 SQL · 파이썬 · 데이터사이언스(분석/통계/머신러닝/딥러닝) · R 을 문제로 연습하는 개인용 사이트.
 서버 없이 **브라우저 안에서** 코드를 실행합니다. (PC, 아이패드 모두 사용 가능)
 
