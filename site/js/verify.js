@@ -26,6 +26,15 @@ async function verifyOne(p) {
   const pub = { ...p };
   delete pub.cross;
 
+  if (p.predict) {
+    const r = await eng.runScript({ ...base, code: p.code, prelude: '' });
+    if (!r.ok) return { pub, errors: ['예측 문제의 코드가 오류를 내요: ' + r.error] };
+    pub.expected = normOut(r.stdout);
+    if (!pub.expected) problems.push('예측 문제의 출력이 비어 있어요');
+    if (!p.solution) problems.push('해설(explain)이 없어요');
+    return { pub, errors: problems };
+  }
+
   if (p.cases) {
     const bad = checkCode(p.solution, p.needs, p.forbids);
     if (bad) return { pub, errors: ['정답 코드가 조건을 어겨요: ' + bad] };

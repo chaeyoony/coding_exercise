@@ -128,3 +128,16 @@
   }, "", USE.NAMES = FALSE)
   .pack(r, paste0(",\"results\":[", paste(items, collapse = ","), "]"))
 }
+
+.run_script <- function(datadir, file) {
+  .reset(datadir)
+  .pack(.run_user(file))
+}
+
+raises <- function(f) {
+  tryCatch({ f(); NULL }, error = function(e) "error")
+}
+
+err_msg <- function(f) {
+  tryCatch({ f(); NULL }, error = function(e) conditionMessage(e))
+}

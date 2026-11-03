@@ -43,7 +43,10 @@ async function run(kind, p, status) {
       await writeData(p.datasets);
       await webR.FS.writeFile('/tmp/user.R', enc.encode(p.code));
       let call;
-      if (kind === 'table') call = `.run_table("/tmp/data", "/tmp/user.R")`;
+      if (kind === 'script') {
+        await webR.FS.writeFile('/tmp/user.R', enc.encode((p.prelude ? p.prelude + '\n' : '') + p.code));
+        call = `.run_script("/tmp/data", "/tmp/user.R")`;
+      } else if (kind === 'table') call = `.run_table("/tmp/data", "/tmp/user.R")`;
       else {
         await webR.FS.writeFile('/tmp/calls.txt', enc.encode(p.calls.join('\n')));
         call = `.run_tests("/tmp/data", "/tmp/user.R", "/tmp/calls.txt")`;
@@ -69,4 +72,5 @@ export const rEngine = {
   async ensure(status) { if (!webR) ready = init(status); await ready; },
   runTable: (p, status) => run('table', p, status),
   runTests: (p, status) => run('tests', p, status),
+  runScript: (p, status) => run('script', p, status),
 };

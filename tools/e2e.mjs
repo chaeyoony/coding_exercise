@@ -23,7 +23,7 @@ async function attempt(id, code, btn) {
 }
 const sol = id => JSON.parse(fs.readFileSync(`site/problems/${id}.json`, 'utf8')).solution;
 
-for (const id of ['sql-007', 'py-011', 'ds-006', 'ds-203', 'r-106', 'r-008', 'r-215', 'r-226', 'r-224', 'py-092', 'ds-453', 'r-310', 'py-130', 'py-141', 'py-185']) {
+for (const id of ['sql-007', 'py-011', 'ds-006', 'ds-203', 'r-106', 'r-008', 'r-215', 'r-226', 'r-224', 'py-092', 'ds-453', 'r-310', 'py-130', 'py-141', 'py-185', 'py-447', 'py-475', 'r-501', 'r-513']) {
   const txt = await attempt(id, sol(id), '#submit');
   check(`${id} 정답 제출 → 통과`, txt.includes('통과'), txt.slice(0, 200));
 }

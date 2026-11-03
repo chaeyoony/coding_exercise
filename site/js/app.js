@@ -128,6 +128,11 @@ function expectedPanel(p) {
     <div class="muted" style="font-size:.85rem">열 이름은 달라도 괜찮아요. 값과 ${p.ordered ? '순서' : '행 내용'}만 비교해요.</div></details>`;
 }
 
+function predictPanel(p) {
+  if (!p.predict) return '';
+  return `<h2>코드</h2><pre class="out code-view">${esc(p.code)}</pre>`;
+}
+
 function casesPanel(p) {
   if (!p.cases) return '';
   const vis = p.cases.filter(c => c.visible);
@@ -164,6 +169,7 @@ async function renderProblem(id) {
         <span class="badge">난이도 ${stars(p.level)}</span><span class="badge">${esc(p.category)}</span>
         ${p.desc}
         ${testsHtml(p)}
+        ${predictPanel(p)}
         ${casesPanel(p)}
         ${dsHtml}
         ${expectedPanel(p)}
@@ -185,7 +191,13 @@ async function renderProblem(id) {
 
   const $code = document.getElementById('code');
   const $res = document.getElementById('result');
-  $code.value = initial;
+  $code.value = p.predict ? (store.getCode(id) ?? '') : initial;
+  if (p.predict) {
+    $code.placeholder = '예상 출력을 그대로 적어 보세요 (여러 줄이면 줄을 바꿔서)';
+    $code.style.minHeight = '140px';
+    document.getElementById('run').textContent = '▶ 코드 실행해서 확인';
+    document.getElementById('reset').style.display = 'none';
+  }
   const isPy = p.track === 'python' || p.track === 'ds';
   let t;
   $code.addEventListener('input', () => { clearTimeout(t); t = setTimeout(() => store.setCode(id, $code.value), 300); });
@@ -225,11 +237,26 @@ async function renderProblem(id) {
   document.getElementById('reset').onclick = () => { if (confirm('작성한 코드를 지우고 처음 코드로 되돌릴까요?')) { $code.value = p.starter; store.setCode(id, p.starter); } };
   document.getElementById('sol').onclick = () => {
     if (!confirm('정답을 보면 스스로 풀 기회가 줄어요. 그래도 볼까요?')) return;
-    document.getElementById('solbox').innerHTML = `<h2>정답 예시</h2><pre class="out">${esc(p.solution)}</pre>`;
+    document.getElementById('solbox').innerHTML = p.predict
+      ? `<h2>정답과 해설</h2><div class="muted">정답 출력</div><pre class="out">${esc(p.expected)}</pre><div class="muted">해설</div><div class="desc">${p.solution}</div>`
+      : `<h2>정답 예시</h2><pre class="out">${esc(p.solution)}</pre>`;
   };
 }
 
 async function judge(p, eng, code, submit, $res, setStatus) {
+  if (p.predict) {
+    if (!submit) {
+      const r = await eng.runScript({ code: p.code, prelude: '', datasets: {}, packages: p.packages || [] }, setStatus);
+      $res.innerHTML = `<div class="status info">실제로 실행한 결과예요. (정답을 미리 보는 것이니, 먼저 직접 예측해 본 뒤에 확인하세요)</div><pre class="out">${esc(r.stdout || '(출력 없음)')}</pre>`;
+      return;
+    }
+    const ok = normOut(code) === normOut(p.expected);
+    if (ok) store.markSolved(p.id);
+    $res.innerHTML = ok
+      ? `<div class="status ok">🎉 맞았어요! 예측이 정확해요.</div>`
+      : `<div class="status bad">아직 달라요. 줄 수, 띄어쓰기, 따옴표·괄호까지 실제 출력과 똑같이 적어야 해요.\n코드를 한 줄씩 다시 따라가 보세요. 막히면 "힌트 보기"나 "코드 실행해서 확인"을 써 보세요.</div>`;
+    return;
+  }
   const datasets = {};
   for (const n of p.datasets || []) datasets[n] = await loadCsv(n);
   const base = { code, datasets, packages: p.packages || [], setup: p.setup || '' };

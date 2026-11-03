@@ -80,3 +80,4 @@ details.cat > summary::before { content: '▾ '; color: var(--muted); }
 details.cat:not([open]) > summary::before { content: '▸ '; }
 .tests li .out { margin: 4px 0 10px; }
 .tests li .muted { font-size: .85rem; margin-top: 6px; }
+.code-view { white-space: pre; line-height: 1.55; }
