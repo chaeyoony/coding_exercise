@@ -8,6 +8,10 @@ import python4 from './python4.mjs';
 import ds from './ds.mjs';
 import ds2 from './ds2.mjs';
 import ds3 from './ds3.mjs';
+import pycourse1 from './pycourse1.mjs';
+import pycourse2 from './pycourse2.mjs';
+import pycourse3 from './pycourse3.mjs';
+import pybasic from './pybasic.mjs';
 import r from './r.mjs';
 import r2 from './r2.mjs';
 import r3 from './r3.mjs';
@@ -19,6 +23,7 @@ const numbered = (list, prefix, start) => list.map((x, i) => ({ ...x, id: `${pre
 export default [
   ...sql, ...sql2, ...sql3,
   ...python, ...python2, ...numbered([...python3, ...python4], 'py', 24),
+  ...numbered([...pycourse1, ...pycourse2, ...pycourse3, ...pybasic], 'py', 128),
   ...ds, ...ds2, ...numbered(ds3, 'ds', 401),
   ...r, ...r2, ...numbered([...r3, ...r4], 'r', 301),
 ];

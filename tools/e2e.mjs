@@ -23,7 +23,7 @@ async function attempt(id, code, btn) {
 }
 const sol = id => JSON.parse(fs.readFileSync(`site/problems/${id}.json`, 'utf8')).solution;
 
-for (const id of ['sql-007', 'py-011', 'ds-006', 'ds-203', 'r-106', 'r-008', 'r-215', 'r-226', 'r-224', 'py-092', 'ds-453', 'r-310']) {
+for (const id of ['sql-007', 'py-011', 'ds-006', 'ds-203', 'r-106', 'r-008', 'r-215', 'r-226', 'r-224', 'py-092', 'ds-453', 'r-310', 'py-130', 'py-141', 'py-185']) {
   const txt = await attempt(id, sol(id), '#submit');
   check(`${id} 정답 제출 → 통과`, txt.includes('통과'), txt.slice(0, 200));
 }
@@ -41,6 +41,13 @@ txt = await attempt('r-001', 'add <- function(a, b) {\n  a + \n', '#run');
 check('r-001 문법 오류 안내', /오류/.test(txt), txt.slice(0, 200));
 txt = await attempt('r-003', 'sum_to_n <- function(n) {\n  total <- 0\n  for (i in 1:n) total <- total + i\n  total\n}\n', '#submit');
 check('r-003 1:n 함정 → 숨겨진 테스트 실패', txt.includes('숨겨진 테스트') && txt.includes('실패'), txt.slice(0, 300));
+
+txt = await attempt('py-130', 'print(list(range(1, n + 1)))\n', '#submit');
+check('출력 채점 오답 → 틀림 + 숨은 테스트 표시', txt.includes('테스트') && !txt.includes('🎉'), txt.slice(0, 200));
+txt = await attempt('py-185', 'print(3)\n', '#submit');
+check('필수 조건(import math) 위반 안내', txt.includes('math'), txt.slice(0, 200));
+txt = await attempt('py-130', 'print(undefined_name)\n', '#run');
+check('출력 채점: 오류 메시지 표시', txt.includes('NameError'), txt.slice(0, 300));
 
 // 진행 상황 저장 확인
 await page.goto(base + 't/sql');

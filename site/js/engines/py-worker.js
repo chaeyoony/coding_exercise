@@ -23,10 +23,11 @@ self.onmessage = async e => {
     const pkgs = [...(payload.packages || [])];
     if (Object.keys(payload.datasets || {}).length) pkgs.push('pandas');
     await ensurePackages(pkgs);
-    const fn = py.globals.get(type === 'table' ? 'run_table' : 'run_tests');
+    const fnName = { table: 'run_table', tests: 'run_tests', script: 'run_script' }[type];
+    const fn = py.globals.get(fnName);
     const csvs = JSON.stringify(payload.datasets || {});
-    const out = type === 'table'
-      ? fn(payload.code, csvs)
+    const out = type === 'table' ? fn(payload.code, csvs)
+      : type === 'script' ? fn(payload.code, payload.prelude || '', csvs)
       : fn(payload.code, JSON.stringify(payload.calls), csvs, payload.setup || '');
     fn.destroy();
     postMessage({ id, ok: true, result: JSON.parse(out) });

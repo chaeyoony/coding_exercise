@@ -1,6 +1,6 @@
 import { TRACKS } from './tracks.js';
 import { store } from './store.js';
-import { compareTables, sameValue } from './compare.js';
+import { compareTables, sameValue, normOut, checkCode } from './compare.js';
 import { parseCsv, inferTypes } from './csv.js';
 
 const $app = document.getElementById('app');
@@ -128,6 +128,15 @@ function expectedPanel(p) {
     <div class="muted" style="font-size:.85rem">열 이름은 달라도 괜찮아요. 값과 ${p.ordered ? '순서' : '행 내용'}만 비교해요.</div></details>`;
 }
 
+function casesPanel(p) {
+  if (!p.cases) return '';
+  const vis = p.cases.filter(c => c.visible);
+  const first = vis[0] || p.cases[0];
+  const given = first.pre ? `<h2>미리 주어진 코드</h2><pre class="out">${esc(first.pre)}</pre>
+    <div class="muted" style="font-size:.85rem">이 코드는 자동으로 먼저 실행돼요. 채점할 때는 값이 달라질 수 있어요.</div>` : '';
+  return `${given}<h2>예상 출력</h2><pre class="out">${esc(first.expected) || '(출력 없음)'}</pre>`;
+}
+
 function testsHtml(p) {
   if (!p.tests) return '';
   const vis = p.tests.filter(t => t.visible);
@@ -155,6 +164,7 @@ async function renderProblem(id) {
         <span class="badge">난이도 ${stars(p.level)}</span><span class="badge">${esc(p.category)}</span>
         ${p.desc}
         ${testsHtml(p)}
+        ${casesPanel(p)}
         ${dsHtml}
         ${expectedPanel(p)}
         <details id="hintbox" ${''}><summary>힌트 보기</summary><div class="desc">${p.hint || '준비된 힌트가 없어요.'}</div></details>
@@ -223,6 +233,34 @@ async function judge(p, eng, code, submit, $res, setStatus) {
   const datasets = {};
   for (const n of p.datasets || []) datasets[n] = await loadCsv(n);
   const base = { code, datasets, packages: p.packages || [], setup: p.setup || '' };
+
+  if (p.cases) {
+    const bad = checkCode(code, p.needs, p.forbids);
+    if (bad) { $res.innerHTML = `<div class="status bad">${esc(bad)}</div>`; return; }
+    const cases = submit ? p.cases : p.cases.filter(c => c.visible);
+    let pass = 0;
+    const items = [];
+    for (const [i, c] of cases.entries()) {
+      const r = await eng.runScript({ ...base, prelude: c.pre }, setStatus);
+      const ok = r.ok && normOut(r.stdout) === normOut(c.expected);
+      if (ok) pass++;
+      const hidden = !c.visible;
+      let body;
+      if (hidden) body = ok ? `숨겨진 테스트 ${i + 1}: 통과` : `숨겨진 테스트 ${i + 1}: 실패`;
+      else body = (c.pre ? `<div class="muted">주어진 코드</div><pre class="out">${esc(c.pre)}</pre>` : '') +
+        `<div class="muted">기대 출력</div><pre class="out">${esc(c.expected)}</pre>` +
+        `<div class="muted">내 출력</div><pre class="out">${esc(r.stdout || '(출력 없음)')}</pre>` +
+        (r.ok ? '' : `<div class="status bad">오류가 났어요\n${esc(r.error)}</div>`);
+      items.push(`<li class="${ok ? 'ok' : 'bad'}">${ok ? '✓ ' : '✗ '}${body}</li>`);
+    }
+    const all = pass === cases.length;
+    if (submit && all) store.markSolved(p.id);
+    const head = submit
+      ? (all ? `🎉 통과! 모든 테스트(${cases.length}개)를 맞혔어요.` : `테스트 ${cases.length}개 중 ${pass}개 통과`)
+      : `예제 ${cases.length}개 중 ${pass}개 통과 (제출하면 숨겨진 테스트까지 확인해요)`;
+    $res.innerHTML = `<div class="status ${all ? 'ok' : 'bad'}">${head}</div><ul class="tests">${items.join('')}</ul>`;
+    return;
+  }
 
   if (p.tests) {
     const tests = submit ? p.tests : p.tests.filter(t => t.visible);

@@ -126,3 +126,18 @@ def run_tests(code, calls_json, csvs_json, setup=""):
         except BaseException as e:  # noqa
             results.append({"ok": False, "error": _fmt_exc(e), "stdout": out.getvalue()})
     return json.dumps({"ok": True, "results": results, "stdout": stdout}, allow_nan=False)
+
+
+def run_script(code, prelude, csvs_json="{}"):
+    """출력 채점용: 미리 주어진 코드(prelude)를 먼저 실행하고 사용자 코드를 실행해 출력(stdout)을 돌려준다."""
+    _reset(json.loads(csvs_json))
+    out = io.StringIO()
+    err = None
+    with contextlib.redirect_stdout(out), contextlib.redirect_stderr(out):
+        try:
+            if prelude:
+                exec(compile(prelude, "<주어진코드>", "exec"), _ns)
+            exec(compile(code, _FILE, "exec"), _ns)
+        except BaseException as e:  # noqa
+            err = _fmt_exc(e)
+    return json.dumps({"ok": err is None, "error": err, "stdout": out.getvalue()}, allow_nan=False)

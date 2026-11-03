@@ -44,3 +44,14 @@ export function compareTables(actual, expected, ordered) {
   }
   return { ok: true };
 }
+
+// 출력 비교용 정리: 줄 끝 공백과 맨 끝의 빈 줄은 무시한다.
+export const normOut = s => String(s ?? '').replace(/\r/g, '').split('\n').map(l => l.replace(/\s+$/, '')).join('\n').replace(/\n+$/, '');
+
+// 코드 조건 검사 (주석은 제외하고 검사). needs: 꼭 들어가야 하는 것, forbids: 들어가면 안 되는 것
+export function checkCode(code, needs = [], forbids = []) {
+  const src = code.replace(/#.*$/gm, '');
+  for (const [pat, msg] of needs) if (!new RegExp(pat).test(src)) return msg;
+  for (const [pat, msg] of forbids) if (new RegExp(pat).test(src)) return msg;
+  return null;
+}

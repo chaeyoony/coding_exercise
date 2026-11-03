@@ -1,5 +1,5 @@
 // 문제 원본(problems_src)을 실제 엔진으로 실행해 검증하고, 배포용 문제 파일을 만든다.
-import { compareTables, sameValue } from './compare.js';
+import { compareTables, sameValue, normOut, checkCode } from './compare.js';
 import { sqlEngine } from './engines/sql.js';
 import { pyEngine } from './engines/py.js';
 import { rEngine } from './engines/r.js';
@@ -25,6 +25,21 @@ async function verifyOne(p) {
   const base = { datasets, packages: p.packages || [], setup: p.setup || '' };
   const pub = { ...p };
   delete pub.cross;
+
+  if (p.cases) {
+    const bad = checkCode(p.solution, p.needs, p.forbids);
+    if (bad) return { pub, errors: ['정답 코드가 조건을 어겨요: ' + bad] };
+    pub.cases = [];
+    for (const [i, c] of p.cases.entries()) {
+      const r = await eng.runScript({ ...base, code: p.solution, prelude: c.pre });
+      if (!r.ok) { problems.push(`케이스 ${i + 1} 정답 코드 오류: ${r.error}`); continue; }
+      const expected = normOut(r.stdout);
+      if (!expected) problems.push(`케이스 ${i + 1}: 정답 출력이 비어 있어요`);
+      pub.cases.push({ pre: c.pre || '', expected, visible: i === 0 || (i === 1 && p.cases.length >= 3) });
+    }
+    if (p.cases.length < 2 && !p.singleCase) problems.push('케이스가 2개 미만이에요 (고정 출력 문제면 singleCase: true)');
+    return { pub, errors: problems };
+  }
 
   if (p.tests) {
     const res = await eng.runTests({ ...base, code: p.solution, calls: p.tests.map(t => t.call) });

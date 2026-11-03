@@ -54,4 +54,5 @@ export const pyEngine = {
   async ensure(status) { if (!worker) spawn(status); await ready; },
   runTable: (p, status) => run('table', p, status),
   runTests: (p, status) => run('tests', p, status),
+  runScript: (p, status) => run('script', p, status),
 };
