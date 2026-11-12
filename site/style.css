@@ -81,3 +81,8 @@ details.cat:not([open]) > summary::before { content: '▸ '; }
 .tests li .out { margin: 4px 0 10px; }
 .tests li .muted { font-size: .85rem; margin-top: 6px; }
 .code-view { white-space: pre; line-height: 1.55; }
+
+.hintbox{margin-top:1rem;padding:.7rem .9rem;border:1px dashed var(--line,#c9d3e3);border-radius:10px}
+.hintbox .hint{margin:.5rem 0;padding:.4rem .7rem;border:1px solid var(--line,#c9d3e3);border-radius:8px;background:var(--panel,transparent)}
+.hintbox .hint summary{cursor:pointer;font-weight:600}
+.hintbox button{margin-top:.5rem}

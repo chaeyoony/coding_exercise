@@ -23,10 +23,17 @@ async function attempt(id, code, btn) {
 }
 const sol = id => JSON.parse(fs.readFileSync(`site/problems/${id}.json`, 'utf8')).solution;
 
-for (const id of ['sql-007', 'py-011', 'ds-006', 'ds-203', 'r-106', 'r-008', 'r-215', 'r-226', 'r-224', 'py-092', 'ds-453', 'r-310', 'py-130', 'py-141', 'py-185', 'py-447', 'py-475', 'r-501', 'r-513']) {
+for (const id of ['sql-007', 'py-011', 'ds-006', 'ds-203', 'r-106', 'r-008', 'r-215', 'r-226', 'r-224', 'py-092', 'ds-453', 'r-310', 'py-130', 'py-141', 'py-185', 'py-447', 'py-475', 'r-501', 'r-513', 'r-615', 'r-647']) {
   const txt = await attempt(id, sol(id), '#submit');
   check(`${id} 정답 제출 → 통과`, txt.includes('통과'), txt.slice(0, 200));
 }
+// 힌트 3단계: 버튼을 누를 때마다 힌트가 하나씩 열리고, 3번째는 확인창 뒤에 나온다
+page.on('dialog', d => d.accept());
+await page.goto(base + 'p/py-011');
+await page.waitForSelector('#hintbtn');
+for (let i = 1; i <= 3; i++) { await page.click('#hintbtn'); }
+check('힌트 3개가 차례로 열림', (await page.locator('#hintlist details.hint').count()) === 3 && (await page.locator('#hintbtn').count()) === 0);
+check('힌트 2에 뼈대(___)가 보임', (await page.innerText('#hintlist')).includes('___'));
 let txt = await attempt('sql-007', 'SELECT customer_id, SUM(quantity) AS total FROM orders GROUP BY 1 ORDER BY 2 DESC LIMIT 3', '#submit');
 check('sql-007 오답 → 틀렸어요', txt.includes('틀렸어요'), txt.slice(0, 200));
 txt = await attempt('sql-007', 'SELEC oops', '#submit');

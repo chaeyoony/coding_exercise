@@ -5,6 +5,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright-core';
+import { makeHints } from './hints.mjs';
+const withHints = p => { const h = makeHints(p); return h ? { ...p, hints: h } : p; };
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const onlyIdx = process.argv.indexOf('--only');
@@ -38,7 +40,7 @@ const { TRACKS } = await import(path.join(root, 'site/js/tracks.js'));
 const outDir = path.join(root, 'site/problems');
 const failed = results.filter(r => r.errors.length);
 if (only) {
-  for (const r of results.filter(r => !r.errors.length && r.pub)) fs.writeFileSync(path.join(outDir, r.id + '.json'), JSON.stringify(r.pub));
+  for (const r of results.filter(r => !r.errors.length && r.pub)) fs.writeFileSync(path.join(outDir, r.id + '.json'), JSON.stringify(withHints(r.pub)));
   console.log(`\n(--only 모드: 개별 파일만 갱신, index.json 은 그대로) 실패 ${failed.length}개`);
   process.exit(failed.length ? 1 : 0);
 }
@@ -47,7 +49,7 @@ if (failed.length) { console.log(`\n실패한 문제 ${failed.length}개 — 사
 fs.rmSync(outDir, { recursive: true, force: true });
 fs.mkdirSync(outDir, { recursive: true });
 const rank = p => [TRACKS.findIndex(t => t.id === p.track), TRACKS.find(t => t.id === p.track).categories.indexOf(p.category), p.level, p.id];
-const list = results.map(r => r.pub).sort((a, b) => {
+const list = results.map(r => withHints(r.pub)).sort((a, b) => {
   const x = rank(a), y = rank(b);
   for (let i = 0; i < 4; i++) if (x[i] !== y[i]) return x[i] < y[i] ? -1 : 1;
   return 0;

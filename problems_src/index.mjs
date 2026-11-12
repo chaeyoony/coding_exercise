@@ -20,6 +20,7 @@ import pyproject from './pyproject.mjs';
 import rmore from './rmore.mjs';
 import pyclass11 from './pyclass11.mjs';
 import pyclass11b from './pyclass11b.mjs';
+import rstats from './rstats.mjs';
 import r from './r.mjs';
 import r2 from './r2.mjs';
 import r3 from './r3.mjs';
@@ -33,5 +34,5 @@ export default [
   ...python, ...python2, ...numbered([...python3, ...python4], 'py', 24),
   ...numbered([...pycourse1, ...pycourse2, ...pycourse3, ...pybasic, ...pyfunc, ...pyfunc2, ...pyclass, ...pylater, ...pyproject, ...pyclass11, ...pyclass11b], 'py', 128),
   ...ds, ...ds2, ...numbered(ds3, 'ds', 401),
-  ...r, ...r2, ...numbered([...r3, ...r4], 'r', 301), ...numbered(rmore, 'r', 501),
+  ...r, ...r2, ...numbered([...r3, ...r4], 'r', 301), ...numbered(rmore, 'r', 501), ...numbered(rstats, 'r', 601),
 ];

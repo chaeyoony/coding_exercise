@@ -10,5 +10,5 @@ export const TRACKS = [
     categories: ['데이터 분석', '데이터 정제', '통계', '머신러닝', '딥러닝'] },
   { id: 'r', name: 'R', icon: '📈', lang: 'R',
     desc: '기본 문법, base R 데이터 다루기, tidyverse(dplyr·tidyr·stringr·lubridate).',
-    categories: ['기초 문법', '벡터·문자열', '함수·재귀', '알고리즘', 'base R 데이터', 'dplyr 기초', 'dplyr 집계·조인', 'tidyr·stringr·lubridate', 'R 출력·조건·반복', '오류 처리·환경', '함수형 도구', 'S3 클래스', 'R5 클래스', 'R 프로젝트 ① 데이터 처리', 'R 프로젝트 ② 게임·시뮬레이션', 'R 프로젝트 ③ 시스템 만들기'] },
+    categories: ['기초 문법', '벡터·문자열', '함수·재귀', '알고리즘', 'base R 데이터', 'dplyr 기초', 'dplyr 집계·조인', 'tidyr·stringr·lubridate', 'R 출력·조건·반복', '오류 처리·환경', '함수형 도구', 'S3 클래스', 'R5 클래스', 'R 프로젝트 ① 데이터 처리', 'R 프로젝트 ② 게임·시뮬레이션', 'R 프로젝트 ③ 시스템 만들기', 'R 통계 ① 데이터 준비', 'R 통계 ② 기술통계·신뢰구간', 'R 통계 ③ 두 집단 비교 (t-검정)', 'R 통계 ④ 세 집단 비교 (ANOVA)', 'R 통계 ⑤ 상관분석', 'R 통계 ⑥ 회귀분석'] },
 ];

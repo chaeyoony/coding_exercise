@@ -173,7 +173,7 @@ async function renderProblem(id) {
         ${casesPanel(p)}
         ${dsHtml}
         ${expectedPanel(p)}
-        <details id="hintbox" ${''}><summary>힌트 보기</summary><div class="desc">${p.hint || '준비된 힌트가 없어요.'}</div></details>
+        ${hintBox(p)}
       </section>
       <section class="panel">
         <textarea id="code" class="code" spellcheck="false" autocapitalize="off" autocorrect="off" autocomplete="off"></textarea>
@@ -189,6 +189,7 @@ async function renderProblem(id) {
     </div>
     <div class="pn"><span>${prev ? `<a href="#/p/${prev.id}">← ${esc(prev.title)}</a>` : ''}</span><span>${next ? `<a href="#/p/${next.id}">${esc(next.title)} →</a>` : ''}</span></div>`;
 
+  wireHints(p);
   const $code = document.getElementById('code');
   const $res = document.getElementById('result');
   $code.value = p.predict ? (store.getCode(id) ?? '') : initial;
@@ -240,6 +241,30 @@ async function renderProblem(id) {
     document.getElementById('solbox').innerHTML = p.predict
       ? `<h2>정답과 해설</h2><div class="muted">정답 출력</div><pre class="out">${esc(p.expected)}</pre><div class="muted">해설</div><div class="desc">${p.solution}</div>`
       : `<h2>정답 예시</h2><pre class="out">${esc(p.solution)}</pre>`;
+  };
+}
+
+function hintBox(p) {
+  const hs = p.hints || (p.hint ? [p.hint] : []);
+  if (!hs.length) return '<div class="muted" style="margin-top:.8rem">준비된 힌트가 없어요.</div>';
+  return `<div id="hintbox" class="hintbox"><div class="muted">힌트는 ${hs.length}단계까지 볼 수 있어요. (1 개념·문법 설명 → 2 코드 뼈대 → 3 거의 완성 코드)</div><div id="hintlist"></div><button id="hintbtn" type="button">💡 힌트 1 보기</button></div>`;
+}
+
+function wireHints(p) {
+  const hs = p.hints || (p.hint ? [p.hint] : []);
+  const btn = document.getElementById('hintbtn');
+  if (!btn) return;
+  let shown = 0;
+  btn.onclick = () => {
+    if (shown === hs.length - 1 && hs.length === 3 && !confirm('힌트 3은 거의 완성된 코드예요. 그래도 볼까요?')) return;
+    const box = document.createElement('details');
+    box.open = true;
+    box.className = 'hint';
+    box.innerHTML = `<summary>힌트 ${shown + 1}</summary><div class="desc">${hs[shown]}</div>`;
+    document.getElementById('hintlist').appendChild(box);
+    shown++;
+    if (shown >= hs.length) btn.remove();
+    else btn.textContent = `💡 힌트 ${shown + 1} 보기`;
   };
 }
 
