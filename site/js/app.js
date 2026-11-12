@@ -1,12 +1,13 @@
 import { TRACKS } from './tracks.js';
 import { store } from './store.js';
+import { NOTES, notesFor } from './notes.js';
 import { compareTables, sameValue, normOut, checkCode } from './compare.js';
 import { parseCsv, inferTypes } from './csv.js';
 
 const $app = document.getElementById('app');
 const $nav = document.getElementById('nav');
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-const stars = n => '★'.repeat(n) + '☆'.repeat(Math.max(0, 4 - n));
+const stars = n => '★'.repeat(n) + '☆'.repeat(Math.max(0, 5 - n));
 
 const engineLoaders = {
   sql: () => import('./engines/sql.js').then(m => m.sqlEngine),
@@ -25,7 +26,7 @@ const loadProblem = async id => (problemCache[id] ??= await (await fetch(`proble
 let INDEX = [];
 
 function renderNav(active) {
-  $nav.innerHTML = TRACKS.map(t => `<a href="#/t/${t.id}" class="${t.id === active ? 'on' : ''}">${t.icon} ${esc(t.name)}</a>`).join('');
+  $nav.innerHTML = TRACKS.map(t => `<a href="#/t/${t.id}" class="${t.id === active ? 'on' : ''}">${t.icon} ${esc(t.name)}</a>`).join('') + `<a href="#/n" class="${active === 'notes' ? 'on' : ''}">📒 기초 노트</a>`;
 }
 
 function tableHtml(t, max = 100, nullLabel = 'NULL') {
@@ -43,6 +44,22 @@ function progress(trackId) {
   return { done: list.filter(p => store.isSolved(p.id)).length, total: list.length };
 }
 
+// 이어하기: 풀던 문제(안 풀었으면 그 문제, 풀었으면 그다음 안 푼 문제)로
+function continueTarget(trackId) {
+  const list = INDEX.filter(p => p.track === trackId);
+  if (!list.length) return null;
+  const last = store.getLast(trackId);
+  const i = last ? list.findIndex(p => p.id === last) : -1;
+  if (i >= 0) {
+    if (!store.isSolved(list[i].id)) return { p: list[i], label: '이어서 풀기' };
+    const nxt = list.slice(i + 1).find(p => !store.isSolved(p.id)) || list[i + 1] || list.find(p => !store.isSolved(p.id));
+    if (nxt) return { p: nxt, label: '다음 문제' };
+    return { p: list[i], label: '다시 보기' };
+  }
+  const first = list.find(p => !store.isSolved(p.id));
+  return first ? { p: first, label: '시작하기' } : { p: list[0], label: '처음부터 다시' };
+}
+
 function renderHome() {
   renderNav('');
   $app.innerHTML = `
@@ -50,11 +67,14 @@ function renderHome() {
     <p class="muted">SQL · 파이썬 · 데이터사이언스 · R. 코드는 이 브라우저 안에서 실행돼요. PC와 아이패드 모두 사용할 수 있어요.</p>
     <div class="cards">${TRACKS.map(t => {
       const { done, total } = progress(t.id);
-      return `<a class="card" href="#/t/${t.id}"><div class="ico">${t.icon}</div><h3>${esc(t.name)}</h3>
+      const c = continueTarget(t.id);
+      return `<div class="card"><a class="cardlink" href="#/t/${t.id}"><div class="ico">${t.icon}</div><h3>${esc(t.name)}</h3>
         <div class="muted">${esc(t.desc)}</div>
         <div class="bar"><i style="width:${total ? (100 * done / total) : 0}%"></i></div>
-        <div class="muted" style="font-size:.85rem;margin-top:4px">${done} / ${total} 해결</div></a>`;
+        <div class="muted" style="font-size:.85rem;margin-top:4px">${done} / ${total} 해결</div></a>
+        ${c ? `<a class="play" href="#/p/${c.p.id}" title="${esc(c.p.title)}">▶ ${c.label}<span class="ptitle">${esc(c.p.title)}</span></a>` : ''}</div>`;
     }).join('')}</div>
+    <p><a class="notehome" href="#/n">📒 기초 노트 모음 — 막힐 때 펼쳐 보는 코드 정리 (${NOTES.length}개)</a></p>
     <div class="tools">
       <button id="exp">진행 상황 내보내기</button>
       <button id="imp">진행 상황 가져오기</button>
@@ -76,7 +96,7 @@ function renderHome() {
 }
 
 // ---------- 트랙 목록 ----------
-const view = { level: 0, unsolved: false };   // 목록 필터 (페이지를 옮겨도 유지)
+const view = { level: 0, unsolved: false, mode: (() => { try { return localStorage.getItem('pp:mode') || 'cat'; } catch (e) { return 'cat'; } })() };   // 목록 필터 (페이지를 옮겨도 유지)
 
 function renderTrack(id) {
   const t = TRACKS.find(x => x.id === id);
@@ -84,23 +104,39 @@ function renderTrack(id) {
   renderNav(id);
   const { done, total } = progress(id);
   const keep = p => (!view.level || p.level === view.level) && (!view.unsolved || !store.isSolved(p.id));
-  const sections = t.categories.map(cat => {
-    const all = INDEX.filter(p => p.track === id && p.category === cat);
-    if (!all.length) return '';
-    const list = all.filter(keep);
-    if (!list.length) return '';
-    const d = all.filter(p => store.isSolved(p.id)).length;
-    return `<details class="cat" open><summary><b>${esc(cat)}</b> <span class="muted">${d} / ${all.length}</span></summary>
-      <ul class="plist">${list.map(p => `
+  const row = (p, showCat) => `
       <li><a href="#/p/${p.id}"><span class="chk">${store.isSolved(p.id) ? '✓' : ''}</span>
-      <span>${esc(p.title)}</span><span class="lv" title="난이도">${stars(p.level)}</span></a></li>`).join('')}</ul></details>`;
-  }).join('');
+      <span>${esc(p.title)}${showCat ? ` <span class="muted catsmall">${esc(p.category)}</span>` : ''}</span><span class="lv" title="난이도">${stars(p.level)}</span></a></li>`;
+  let sections;
+  if (view.mode === 'level') {
+    const rank = Object.fromEntries(t.categories.map((c, i) => [c, i]));
+    sections = [1, 2, 3, 4, 5].map(lv => {
+      const all = INDEX.filter(p => p.track === id && p.level === lv).sort((a, b) => (rank[a.category] ?? 99) - (rank[b.category] ?? 99));
+      const list = all.filter(keep);
+      if (!list.length) return '';
+      const d = all.filter(p => store.isSolved(p.id)).length;
+      return `<details class="cat" ${lv <= 2 ? 'open' : ''}><summary><b>난이도 ${stars(lv)}</b> <span class="muted">${d} / ${all.length}</span></summary>
+      <ul class="plist">${list.map(p => row(p, true)).join('')}</ul></details>`;
+    }).join('');
+  } else {
+    sections = t.categories.map(cat => {
+      const all = INDEX.filter(p => p.track === id && p.category === cat);
+      if (!all.length) return '';
+      const list = all.filter(keep);
+      if (!list.length) return '';
+      const d = all.filter(p => store.isSolved(p.id)).length;
+      return `<details class="cat" open><summary><b>${esc(cat)}</b> <span class="muted">${d} / ${all.length}</span></summary>
+      <ul class="plist">${list.map(p => row(p, false)).join('')}</ul></details>`;
+    }).join('');
+  }
   const chip = (lv, label) => `<button class="chip ${view.level === lv ? 'on' : ''}" data-lv="${lv}">${label}</button>`;
   $app.innerHTML = `<h1>${t.icon} ${esc(t.name)}</h1>
     <p class="muted">${esc(t.desc)} · ${done} / ${total} 해결 · 실행 환경: ${esc(t.lang)}</p>
-    <div class="filters">${chip(0, '전체')}${[1, 2, 3, 4].map(n => chip(n, stars(n).replace(/☆/g, ''))).join('')}
+    <div class="filters"><button class="chip ${view.mode === 'cat' ? 'on' : ''}" data-mode="cat">📚 단원별</button><button class="chip ${view.mode === 'level' ? 'on' : ''}" data-mode="level">📶 난이도순</button>
+      <span class="sep"></span>${chip(0, '전체')}${[1, 2, 3, 4, 5].map(n => chip(n, stars(n).replace(/☆/g, ''))).join('')}
       <button class="chip ${view.unsolved ? 'on' : ''}" id="unsolved">안 푼 문제만</button></div>
     ${sections || '<p class="muted">조건에 맞는 문제가 없어요.</p>'}`;
+  $app.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { view.mode = b.dataset.mode; try { localStorage.setItem('pp:mode', view.mode); } catch (e) { /* ignore */ } renderTrack(id); });
   $app.querySelectorAll('[data-lv]').forEach(b => b.onclick = () => { view.level = Number(b.dataset.lv); renderTrack(id); });
   document.getElementById('unsolved').onclick = () => { view.unsolved = !view.unsolved; renderTrack(id); };
 }
@@ -182,6 +218,7 @@ async function renderProblem(id) {
   const list = INDEX.filter(x => x.track === p.track);
   const pos = list.findIndex(x => x.id === id);
   const prev = list[pos - 1], next = list[pos + 1];
+  store.setLast(p.track, id);
   const initial = store.getCode(id) ?? p.starter;
   const dsHtml = await datasetPanel(p);
 
@@ -198,6 +235,7 @@ async function renderProblem(id) {
         ${dsHtml}
         ${expectedPanel(p)}
         ${hintBox(p)}
+        ${noteLinks(p)}
       </section>
       <section class="panel">
         <textarea id="code" class="code" spellcheck="false" autocapitalize="off" autocorrect="off" autocomplete="off"></textarea>
@@ -270,6 +308,12 @@ async function renderProblem(id) {
       ? `<h2>정답과 해설</h2><div class="muted">정답 출력</div><pre class="out">${esc(p.expected)}</pre><div class="muted">해설</div><div class="desc">${p.solution}</div>`
       : `<h2>정답 예시</h2><pre class="out">${esc(p.solution)}</pre>`;
   };
+}
+
+function noteLinks(p) {
+  const ns = notesFor(p);
+  if (!ns.length) return '';
+  return `<div class="notelinks">📒 막히면 참고 노트: ${ns.map(x => `<a href="#/n/${x.id}" target="_blank" rel="noopener">${esc(x.title)} ↗</a>`).join(' · ')}</div>`;
 }
 
 function hintBox(p) {
@@ -393,6 +437,31 @@ async function judge(p, eng, code, submit, $res, setStatus) {
     <h2>내 결과</h2>${tableHtml(res.table)}${out}`;
 }
 
+// ---------- 기초 노트 ----------
+function renderNotes(id) {
+  renderNav('notes');
+  const trackName = tid => TRACKS.find(t => t.id === tid)?.name || tid;
+  const order = ['python', 'ds', 'r', 'sql'];
+  const side = order.map(tid => {
+    const list = NOTES.filter(n => n.track === tid);
+    if (!list.length) return '';
+    return `<div class="nsec"><b>${esc(trackName(tid))}</b>${list.map(n => `<a href="#/n/${n.id}" class="${n.id === id ? 'on' : ''}">${esc(n.title)}</a>`).join('')}</div>`;
+  }).join('');
+  const note = NOTES.find(n => n.id === id);
+  const body = note
+    ? `<h1>📒 ${esc(note.title)}</h1><div class="muted" style="margin-bottom:.6rem">${esc(trackName(note.track))} 기초 노트</div><div class="note desc">${note.html}</div>
+       <div class="muted" style="margin-top:1rem">이 노트가 필요한 문제를 풀다가 왔다면 이전 탭으로 돌아가면 풀던 코드가 그대로 있어요.</div>`
+    : `<h1>📒 기초 노트</h1><p class="muted">문법이나 개념이 기억나지 않을 때 펼쳐 보세요. 문제 화면 아래에서도 그 단원에 맞는 노트로 바로 연결돼요.</p>
+       <input id="nsearch" class="nsearch" placeholder="노트 제목 검색 (예: 클래스, 람다, t-검정)">
+       <div id="nlist">${order.map(tid => {
+         const list = NOTES.filter(n => n.track === tid);
+         return list.length ? `<h2>${esc(trackName(tid))}</h2><div class="ngrid">${list.map(n => `<a class="card" href="#/n/${n.id}" data-t="${esc(n.title)} ${esc(n.id)}"><b>${esc(n.title)}</b></a>`).join('')}</div>` : '';
+       }).join('')}</div>`;
+  $app.innerHTML = `<div class="nlayout"><aside class="nside">${side}</aside><section class="nmain">${body}</section></div>`;
+  const q = document.getElementById('nsearch');
+  if (q) q.oninput = () => $app.querySelectorAll('#nlist .card').forEach(c => { c.style.display = c.dataset.t.toLowerCase().includes(q.value.toLowerCase()) ? '' : 'none'; });
+}
+
 // ---------- 라우터 ----------
 function route() {
   const h = location.hash.replace(/^#\/?/, '');
@@ -400,6 +469,7 @@ function route() {
   window.scrollTo(0, 0);
   if (kind === 't') renderTrack(arg);
   else if (kind === 'p') renderProblem(arg);
+  else if (kind === 'n') renderNotes(arg);
   else renderHome();
 }
 

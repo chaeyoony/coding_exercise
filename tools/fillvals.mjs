@@ -1,7 +1,7 @@
 // 사용법: node tools/fillvals.mjs build.log  → problems_src/rstats_values.mjs 에 "기대값 undefined" 로 나온 정답코드 값을 저장
 import fs from 'node:fs';
 const log = fs.readFileSync(process.argv[2], 'utf8').split('\n');
-const file = new URL('../problems_src/rstats_values.mjs', import.meta.url);
+const file = new URL('../problems_src/' + (process.argv[3] || 'rstats_values.mjs'), import.meta.url);
 const cur = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8').replace(/^export default /, '').replace(/;\s*$/, '')) : {};
 let n = 0;
 for (const l of log) {

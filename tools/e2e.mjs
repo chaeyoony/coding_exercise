@@ -41,6 +41,33 @@ await page.waitForFunction(() => !location.hash.endsWith('/py-011'), null, { tim
 check('5초 뒤 자동으로 다음 문제로 이동', !page.url().endsWith('/py-011'), page.url());
 await page.goto(base + 'p/py-011');
 check('다음 문제 버튼이 항상 보임', (await page.locator('#nextbtn').count()) === 1);
+// 홈: 이어하기 버튼, 카드 글자 넘침 없음
+await page.goto(base);
+await page.waitForSelector('.card .play');
+check('홈 카드마다 이어하기 버튼이 있음', (await page.locator('.card .play').count()) === 4);
+const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 2);
+check('홈 화면이 가로로 넘치지 않음', !overflow);
+await page.locator('.card .play').nth(1).click();
+await page.waitForSelector('#code');
+check('이어하기 → 문제 화면으로 이동', (await page.url()).includes('#/p/'));
+// 풀던 문제 기억: 문제를 열어 두면 홈의 이어하기가 그 문제를 가리킨다
+await page.goto(base + 'p/py-020');
+await page.waitForSelector('#code');
+await page.goto(base);
+await page.waitForSelector('.card .play');
+check('이어하기가 마지막으로 연 문제를 가리킴', ((await page.locator('.card .play').nth(1).getAttribute('href')) || '').endsWith('/py-020'));
+// 트랙 화면: 난이도순 보기
+await page.goto(base.replace('#/', '#/t/python'));
+await page.waitForSelector('[data-mode="level"]');
+await page.click('[data-mode="level"]');
+check('난이도순 보기가 열림', (await page.locator('details.cat summary').first().innerText()).includes('난이도'));
+// 기초 노트
+await page.goto(base + 'n/py-lambda');
+await page.waitForSelector('.note');
+check('기초 노트 페이지가 열림', (await page.innerText('.note')).includes('lambda'));
+await page.goto(base + 'p/py-011');
+await page.waitForSelector('.notelinks a');
+check('문제 화면에 참고 노트 링크가 있음', (await page.locator('.notelinks a').count()) >= 1);
 // 힌트 3단계: 버튼을 누를 때마다 힌트가 하나씩 열리고, 3번째는 확인창 뒤에 나온다
 page.on('dialog', d => d.accept());
 await page.goto(base + 'p/py-011');
