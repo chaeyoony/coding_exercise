@@ -148,7 +148,31 @@ function testsHtml(p) {
   return `<h2>예제</h2><ul class="tests">${vis.map(t => `<li><code>${esc(t.call)}</code> → <code>${esc(JSON.stringify(t.expected))}</code></li>`).join('')}</ul>`;
 }
 
+let nextTimer = null;
+function clearNext() { if (nextTimer) { clearInterval(nextTimer); nextTimer = null; } }
+
+// 정답을 맞히면 5초 뒤 다음 문제로 자동 이동 (취소 가능)
+function offerNext(next, $res) {
+  clearNext();
+  const bar = document.createElement('div');
+  bar.className = 'nextbar';
+  if (!next) { bar.innerHTML = '<span>이 트랙의 마지막 문제까지 풀었어요! 🎉</span>'; $res.appendChild(bar); return; }
+  let left = 5;
+  bar.innerHTML = `<span id="nextmsg"></span> <button id="gonow" type="button" class="primary">지금 이동</button> <button id="stopauto" type="button">이동 취소</button>`;
+  $res.appendChild(bar);
+  const msg = bar.querySelector('#nextmsg');
+  const show = () => { msg.textContent = `${left}초 뒤 다음 문제로 이동해요 → ${next.title}`; };
+  show();
+  bar.querySelector('#gonow').onclick = () => { clearNext(); location.hash = `#/p/${next.id}`; };
+  bar.querySelector('#stopauto').onclick = () => { clearNext(); bar.innerHTML = '<span class="muted">자동 이동을 취소했어요. 위의 "다음 문제 →" 버튼으로 이동할 수 있어요.</span>'; };
+  nextTimer = setInterval(() => {
+    left--;
+    if (left <= 0) { clearNext(); location.hash = `#/p/${next.id}`; } else show();
+  }, 1000);
+}
+
 async function renderProblem(id) {
+  clearNext();
   const meta = INDEX.find(p => p.id === id);
   if (!meta) { location.hash = '#/'; return; }
   renderNav(meta.track);
@@ -182,6 +206,7 @@ async function renderProblem(id) {
           <button id="submit" class="primary">제출</button>
           <button id="reset">처음 코드로</button>
           <button id="sol">정답 보기</button>
+          ${next ? '<button id="nextbtn" type="button" class="ghost">다음 문제 →</button>' : ''}
         </div>
         <div id="result"></div>
         <div id="solbox"></div>
@@ -228,11 +253,14 @@ async function renderProblem(id) {
       const eng = await getEngine(p.track);
       await eng.ensure(setStatus);
       await judge(p, eng, $code.value, submit, $res, setStatus);
+      if (submit && $res.querySelector('.status.ok')) offerNext(next, $res);
     } catch (e) {
       $res.innerHTML = `<div class="status bad">엔진을 불러오지 못했어요: ${esc(e.message || e)}</div>`;
     }
     btns.forEach(b => b.disabled = false);
   }
+  const nb = document.getElementById('nextbtn');
+  if (nb) nb.onclick = () => { location.hash = `#/p/${next.id}`; };
   document.getElementById('run').onclick = () => go(false);
   document.getElementById('submit').onclick = () => go(true);
   document.getElementById('reset').onclick = () => { if (confirm('작성한 코드를 지우고 처음 코드로 되돌릴까요?')) { $code.value = p.starter; store.setCode(id, p.starter); } };
@@ -268,6 +296,8 @@ function wireHints(p) {
   };
 }
 
+const looseOut = t => normOut(t).split('\n').map(l => l.replace(/[ \t]+/g, ' ').trim()).join('\n');
+
 async function judge(p, eng, code, submit, $res, setStatus) {
   if (p.predict) {
     if (!submit) {
@@ -287,14 +317,16 @@ async function judge(p, eng, code, submit, $res, setStatus) {
   const base = { code, datasets, packages: p.packages || [], setup: p.setup || '' };
 
   if (p.cases) {
-    const bad = checkCode(code, p.needs, p.forbids);
-    if (bad) { $res.innerHTML = `<div class="status bad">${esc(bad)}</div>`; return; }
+    const bad = checkCode(code, p.needs, p.forbids);   // 결과가 맞으면 통과. 연습용 문법 권유는 안내만 한다
     const cases = submit ? p.cases : p.cases.filter(c => c.visible);
-    let pass = 0;
+    let pass = 0, spaceOnly = false;
     const items = [];
     for (const [i, c] of cases.entries()) {
       const r = await eng.runScript({ ...base, prelude: c.pre }, setStatus);
-      const ok = r.ok && normOut(r.stdout) === normOut(c.expected);
+      const exact = r.ok && normOut(r.stdout) === normOut(c.expected);
+      const loose = !exact && r.ok && looseOut(r.stdout) === looseOut(c.expected);   // 줄 안의 띄어쓰기만 다른 경우도 인정
+      if (loose) spaceOnly = true;
+      const ok = exact || loose;
       if (ok) pass++;
       const hidden = !c.visible;
       let body;
@@ -310,7 +342,12 @@ async function judge(p, eng, code, submit, $res, setStatus) {
     const head = submit
       ? (all ? `🎉 통과! 모든 테스트(${cases.length}개)를 맞혔어요.` : `테스트 ${cases.length}개 중 ${pass}개 통과`)
       : `예제 ${cases.length}개 중 ${pass}개 통과 (제출하면 숨겨진 테스트까지 확인해요)`;
-    $res.innerHTML = `<div class="status ${all ? 'ok' : 'bad'}">${head}</div><ul class="tests">${items.join('')}</ul>`;
+    const tip = bad ? (all
+      ? `<div class="status info">💡 정답이에요! 다만 이 문제는 문법 연습용이라 이런 방법도 써 보면 좋아요: ${esc(bad)}</div>`
+      : `<div class="status info">💡 이 문제의 연습 포인트: ${esc(bad)} (꼭 그래야 하는 건 아니고, 결과만 맞으면 정답이에요)</div>`) : '';
+    const sp = spaceOnly ? '<div class="status info">💡 줄 안의 띄어쓰기만 달랐어요. 정답으로 인정했어요. (문제에 출력 형식이 적혀 있다면 그대로 맞춰 보세요)</div>' : '';
+    const alt = submit && !all ? `<div class="muted" style="margin-top:.4rem">코드가 달라도 <b>출력이 같으면 정답</b>이에요. 기대 출력과 내 출력을 비교해 보세요.</div>` : '';
+    $res.innerHTML = `<div class="status ${all ? 'ok' : 'bad'}">${head}</div>${tip}${sp}${alt}<ul class="tests">${items.join('')}</ul>`;
     return;
   }
 
@@ -338,7 +375,8 @@ async function judge(p, eng, code, submit, $res, setStatus) {
     const head = submit
       ? (all ? `🎉 통과! 모든 테스트(${tests.length}개)를 맞혔어요.` : `테스트 ${tests.length}개 중 ${pass}개 통과`)
       : `예제 ${tests.length}개 중 ${pass}개 통과 (제출하면 숨겨진 테스트까지 확인해요)`;
-    $res.innerHTML = `<div class="status ${all ? 'ok' : 'bad'}">${head}</div><ul class="tests">${items}</ul>${out}`;
+    const alt = submit && !all ? `<div class="muted" style="margin-top:.4rem">풀이 방식은 자유예요. 함수가 <b>돌려주는 값</b>이 같으면 정답이에요.</div>` : '';
+    $res.innerHTML = `<div class="status ${all ? 'ok' : 'bad'}">${head}</div>${alt}<ul class="tests">${items}</ul>${out}`;
     return;
   }
 
@@ -350,7 +388,8 @@ async function judge(p, eng, code, submit, $res, setStatus) {
   const head = cmp.ok
     ? (submit ? '🎉 통과! 예상 결과와 같아요.' : '예상 결과와 같아요. 제출해 보세요!')
     : (submit ? '틀렸어요: ' : '아직 달라요: ') + cmp.msg;
-  $res.innerHTML = `<div class="status ${cmp.ok ? 'ok' : 'bad'}">${esc(head)}</div>
+  const alt = submit && !cmp.ok ? `<div class="muted" style="margin-top:.4rem">풀이 방식은 자유예요. 결과 표가 같으면 정답이에요. (열 이름은 달라도 되고${p.ordered ? '' : ', 행 순서도 달라도 돼요'})</div>` : '';
+  $res.innerHTML = `<div class="status ${cmp.ok ? 'ok' : 'bad'}">${esc(head)}</div>${alt}
     <h2>내 결과</h2>${tableHtml(res.table)}${out}`;
 }
 

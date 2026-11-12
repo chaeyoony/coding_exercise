@@ -86,3 +86,6 @@ details.cat:not([open]) > summary::before { content: '▸ '; }
 .hintbox .hint{margin:.5rem 0;padding:.4rem .7rem;border:1px solid var(--line,#c9d3e3);border-radius:8px;background:var(--panel,transparent)}
 .hintbox .hint summary{cursor:pointer;font-weight:600}
 .hintbox button{margin-top:.5rem}
+
+.nextbar{margin-top:.7rem;padding:.6rem .8rem;border-radius:10px;background:var(--ok-soft,#e8f6ee);display:flex;gap:.6rem;align-items:center;flex-wrap:wrap}
+.nextbar span{flex:1 1 12rem}

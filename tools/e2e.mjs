@@ -27,6 +27,20 @@ for (const id of ['sql-007', 'py-011', 'ds-006', 'ds-203', 'r-106', 'r-008', 'r-
   const txt = await attempt(id, sol(id), '#submit');
   check(`${id} 정답 제출 → 통과`, txt.includes('통과'), txt.slice(0, 200));
 }
+// 연습 조건(needs)은 안내만: 다른 방법으로 풀어도 출력이 맞으면 통과
+let tip = await attempt('r-504', 'cat(1:n, sep = "\\n")\n', '#submit');
+check('다른 풀이(for 안 씀)도 정답 인정 + 안내', tip.includes('통과') && tip.includes('💡'), tip.slice(0, 200));
+// 정답 후 자동으로 다음 문제로 이동 (5초)
+await page.goto(base + 'p/py-011');
+await page.waitForSelector('#code');
+await page.fill('#code', sol('py-011'));
+await page.click('#submit');
+await page.waitForSelector('.nextbar');
+check('정답 후 다음 문제 이동 안내가 뜸', (await page.innerText('.nextbar')).includes('다음 문제로 이동'));
+await page.waitForFunction(() => !location.hash.endsWith('/py-011'), null, { timeout: 12000 });
+check('5초 뒤 자동으로 다음 문제로 이동', !page.url().endsWith('/py-011'), page.url());
+await page.goto(base + 'p/py-011');
+check('다음 문제 버튼이 항상 보임', (await page.locator('#nextbtn').count()) === 1);
 // 힌트 3단계: 버튼을 누를 때마다 힌트가 하나씩 열리고, 3번째는 확인창 뒤에 나온다
 page.on('dialog', d => d.accept());
 await page.goto(base + 'p/py-011');
