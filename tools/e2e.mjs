@@ -75,7 +75,7 @@ await page.fill('#code', sol('py-011'));
 await page.focus('#code');
 await page.keyboard.press('Control+Shift+Enter');
 await page.waitForFunction(() => /status ok/.test(document.getElementById('result').innerHTML), null, { timeout: 120000 });
-check('Ctrl+Shift+Enter 로 제출됨', (await page.innerText('#result')).includes('통과'));
+check('Ctrl+Shift+Enter 로 제출됨', (await page.innerText('#result')).includes('모든 테스트'));
 await page.keyboard.press('Control+Enter');
 await page.waitForFunction(() => /status (ok|info|bad)/.test(document.getElementById('result').innerHTML), null, { timeout: 120000 });
 check('Ctrl+Enter 로 실행됨', (await page.innerText('#result')).length > 0);
@@ -98,6 +98,30 @@ check('Ctrl+Enter 로 실행됨', (await page.innerText('#result')).length > 0);
   await page.evaluate(v => localStorage.setItem('practice-platform:v1', v), saved);
   await page.reload();
 }
+// 단축키 우회: Alt+Enter, Ctrl+Enter 두 번 연속 = 제출
+await page.goto(base + 'p/py-011');
+await page.waitForSelector('#code');
+await page.fill('#code', sol('py-011'));
+await page.focus('#code');
+await page.keyboard.press('Alt+Enter');
+await page.waitForFunction(() => /모든 테스트/.test(document.getElementById('result').innerHTML), null, { timeout: 120000 });
+check('Alt+Enter 로 제출됨', true);
+await page.goto(base + 'p/py-020');
+await page.waitForSelector('#code');
+await page.fill('#code', sol('py-020'));
+await page.focus('#code');
+await page.keyboard.press('Control+Enter');
+await page.keyboard.press('Control+Enter');
+await page.waitForFunction(() => /모든 테스트/.test(document.getElementById('result').innerHTML), null, { timeout: 120000 });
+check('Ctrl(⌘)+Enter 두 번 연속으로 제출됨', true);
+// 맥·아이패드: Command(Meta)+Shift+Enter 로 제출
+await page.goto(base + 'p/py-004');
+await page.waitForSelector('#code');
+await page.fill('#code', sol('py-004'));
+await page.focus('#code');
+await page.keyboard.press('Meta+Shift+Enter');
+await page.waitForFunction(() => /모든 테스트/.test(document.getElementById('result').innerHTML), null, { timeout: 120000 });
+check('Command+Shift+Enter 로 제출됨', true);
 // 힌트 3단계: 버튼을 누를 때마다 힌트가 하나씩 열리고, 3번째는 확인창 뒤에 나온다
 page.on('dialog', d => d.accept());
 await page.goto(base + 'p/py-011');

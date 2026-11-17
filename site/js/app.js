@@ -301,7 +301,7 @@ async function renderProblem(id) {
           <button id="sol">정답 보기</button>
           ${next ? '<button id="nextbtn" type="button" class="ghost">다음 문제 →</button>' : ''}
         </div>
-        <div class="muted keyhint">단축키: <kbd>${modKey()}</kbd>+<kbd>Shift</kbd>+<kbd>Enter</kbd> 제출 · <kbd>${modKey()}</kbd>+<kbd>Enter</kbd> 실행</div>
+        <div class="muted keyhint">단축키: <kbd>${modKey()}</kbd>+<kbd>Shift</kbd>+<kbd>Enter</kbd> 제출 · <kbd>${modKey()}</kbd>+<kbd>Enter</kbd> 실행 · <kbd>${modKey()}</kbd>+<kbd>Enter</kbd> 두 번 연속 또는 <kbd>Option/Alt</kbd>+<kbd>Enter</kbd> 도 제출</div>
         <div id="result"></div>
         <div id="solbox"></div>
       </section>
@@ -333,13 +333,12 @@ async function renderProblem(id) {
       let indent = line.match(/^\s*/)[0];
       if (isPy && /:\s*$/.test(line)) indent += '    ';
       if (indent) { e.preventDefault(); $code.setRangeText('\n' + indent, s, $code.selectionEnd, 'end'); $code.dispatchEvent(new Event('input')); }
-    } else if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-      e.preventDefault(); go(false);
     }
   });
 
   const setStatus = msg => { $res.innerHTML = `<div class="status info">${esc(msg)}</div>`; };
   const btns = ['run', 'submit'].map(i => document.getElementById(i));
+  let pendingSubmit = false;
   async function go(submit) {
     btns.forEach(b => b.disabled = true);
     try {
@@ -352,16 +351,29 @@ async function renderProblem(id) {
       $res.innerHTML = `<div class="status bad">엔진을 불러오지 못했어요: ${esc(e.message || e)}</div>`;
     }
     btns.forEach(b => b.disabled = false);
+    if (pendingSubmit) { pendingSubmit = false; go(true); }
   }
   const nb = document.getElementById('nextbtn');
   if (nb) nb.onclick = () => { location.hash = `#/p/${next.id}`; };
   // 단축키: Ctrl/⌘ + Shift + Enter = 제출, Ctrl/⌘ + Enter = 실행
+  // 아이패드(Safari)는 ⌘와 함께 누른 Shift가 이벤트에 안 실리기도 해서, Shift 키 자체를 따로 추적하고
+  // 우회 방법(Option/Alt + Enter, ⌘+Enter 두 번 연속)도 제출로 인정한다.
+  let shiftDown = false, lastRun = 0;
   $code.addEventListener('keydown', e => {
-    if (e.key !== 'Enter' || !(e.ctrlKey || e.metaKey)) return;
+    if (e.key === 'Shift') { shiftDown = true; return; }
+    if (e.key !== 'Enter') return;
+    const mod = e.ctrlKey || e.metaKey;
+    if (!mod && !e.altKey) return;
     e.preventDefault();
-    if (btns[0].disabled) return;
-    go(e.shiftKey);
+    const shift = e.shiftKey || shiftDown || (e.getModifierState && e.getModifierState('Shift'));
+    const quickTwice = mod && Date.now() - lastRun < 900;   // ⌘+Enter 를 빠르게 두 번
+    const wantSubmit = shift || e.altKey || quickTwice;
+    if (btns[0].disabled) { if (wantSubmit) pendingSubmit = true; return; }   // 실행 중이면 끝난 뒤 제출
+    if (wantSubmit) { lastRun = 0; go(true); }
+    else { lastRun = Date.now(); go(false); }
   });
+  $code.addEventListener('keyup', e => { if (e.key === 'Shift') shiftDown = false; });
+  $code.addEventListener('blur', () => { shiftDown = false; });
   document.getElementById('run').onclick = () => go(false);
   document.getElementById('submit').onclick = () => go(true);
   document.getElementById('reset').onclick = () => { if (confirm('작성한 코드를 지우고 처음 코드로 되돌릴까요?')) { $code.value = p.starter; store.setCode(id, p.starter); } };
