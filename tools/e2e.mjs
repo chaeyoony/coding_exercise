@@ -68,6 +68,17 @@ check('기초 노트 페이지가 열림', (await page.innerText('.note')).inclu
 await page.goto(base + 'p/py-011');
 await page.waitForSelector('.notelinks a');
 check('문제 화면에 참고 노트 링크가 있음', (await page.locator('.notelinks a').count()) >= 1);
+// 단축키: Ctrl+Shift+Enter 로 제출, Ctrl+Enter 로 실행
+await page.goto(base + 'p/py-011');
+await page.waitForSelector('#code');
+await page.fill('#code', sol('py-011'));
+await page.focus('#code');
+await page.keyboard.press('Control+Shift+Enter');
+await page.waitForFunction(() => /status ok/.test(document.getElementById('result').innerHTML), null, { timeout: 120000 });
+check('Ctrl+Shift+Enter 로 제출됨', (await page.innerText('#result')).includes('통과'));
+await page.keyboard.press('Control+Enter');
+await page.waitForFunction(() => /status (ok|info|bad)/.test(document.getElementById('result').innerHTML), null, { timeout: 120000 });
+check('Ctrl+Enter 로 실행됨', (await page.innerText('#result')).length > 0);
 // 힌트 3단계: 버튼을 누를 때마다 힌트가 하나씩 열리고, 3번째는 확인창 뒤에 나온다
 page.on('dialog', d => d.accept());
 await page.goto(base + 'p/py-011');

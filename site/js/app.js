@@ -246,6 +246,7 @@ async function renderProblem(id) {
           <button id="sol">정답 보기</button>
           ${next ? '<button id="nextbtn" type="button" class="ghost">다음 문제 →</button>' : ''}
         </div>
+        <div class="muted keyhint">단축키: <kbd>${modKey()}</kbd>+<kbd>Shift</kbd>+<kbd>Enter</kbd> 제출 · <kbd>${modKey()}</kbd>+<kbd>Enter</kbd> 실행</div>
         <div id="result"></div>
         <div id="solbox"></div>
       </section>
@@ -299,6 +300,13 @@ async function renderProblem(id) {
   }
   const nb = document.getElementById('nextbtn');
   if (nb) nb.onclick = () => { location.hash = `#/p/${next.id}`; };
+  // 단축키: Ctrl/⌘ + Shift + Enter = 제출, Ctrl/⌘ + Enter = 실행
+  $code.addEventListener('keydown', e => {
+    if (e.key !== 'Enter' || !(e.ctrlKey || e.metaKey)) return;
+    e.preventDefault();
+    if (btns[0].disabled) return;
+    go(e.shiftKey);
+  });
   document.getElementById('run').onclick = () => go(false);
   document.getElementById('submit').onclick = () => go(true);
   document.getElementById('reset').onclick = () => { if (confirm('작성한 코드를 지우고 처음 코드로 되돌릴까요?')) { $code.value = p.starter; store.setCode(id, p.starter); } };
@@ -308,6 +316,12 @@ async function renderProblem(id) {
       ? `<h2>정답과 해설</h2><div class="muted">정답 출력</div><pre class="out">${esc(p.expected)}</pre><div class="muted">해설</div><div class="desc">${p.solution}</div>`
       : `<h2>정답 예시</h2><pre class="out">${esc(p.solution)}</pre>`;
   };
+}
+
+// 맥·아이패드는 ⌘(Command), 그 외(윈도우 등)는 Ctrl
+function modKey() {
+  const apple = /Mac|iPad|iPhone/.test(navigator.platform || '') || (navigator.maxTouchPoints > 1 && /Mac/.test(navigator.userAgent));
+  return apple ? '⌘' : 'Ctrl';
 }
 
 function noteLinks(p) {

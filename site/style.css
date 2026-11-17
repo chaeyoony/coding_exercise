@@ -112,3 +112,6 @@ html, body { overflow-x: hidden; }
 .ngrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(200px,100%),1fr));gap:10px}
 .nsearch{width:100%;padding:.55rem .7rem;margin:.4rem 0 .8rem;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--text);font-size:1rem}
 @media (max-width:760px){.nlayout{grid-template-columns:1fr}.nside{position:static;max-height:none;order:2}}
+
+.keyhint{font-size:.82rem;margin:.4rem 0}
+kbd{border:1px solid var(--line);border-radius:4px;padding:0 .35em;font-size:.85em;background:var(--card)}
