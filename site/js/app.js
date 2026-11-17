@@ -1,5 +1,6 @@
 import { TRACKS } from './tracks.js';
 import { store } from './store.js';
+import { connect, disconnect, syncNow, isConnected, getState, onStatus, startSync } from './sync.js';
 import { NOTES, notesFor } from './notes.js';
 import { compareTables, sameValue, normOut, checkCode } from './compare.js';
 import { parseCsv, inferTypes } from './csv.js';
@@ -60,6 +61,49 @@ function continueTarget(trackId) {
   return first ? { p: first, label: '시작하기' } : { p: list[0], label: '처음부터 다시' };
 }
 
+let syncOpen = false;   // 방금 연결했으면 펼쳐서 결과를 보여준다
+function syncBox() {
+  const on = isConnected();
+  const st = getState();
+  const when = st.at ? new Date(st.at).toLocaleString('ko-KR') : '아직 없음';
+  if (on) {
+    return `<details class="syncbox" id="syncbox" ${syncOpen ? 'open' : ''}><summary>☁️ 기기 간 동기화 <b>연결됨</b> <span class="muted" id="synclabel">${syncLabel(st)}</span></summary>
+      <p class="muted">진행 상황과 작성한 코드가 본인 GitHub의 비공개 Gist에 자동으로 저장돼요. 다른 기기에서도 같은 토큰으로 연결하면 이어서 할 수 있어요.</p>
+      <p class="muted">마지막 동기화: <span id="syncwhen">${esc(when)}</span></p>
+      <div class="tools"><button id="syncnow">지금 동기화</button><button id="syncoff">연결 해제</button></div>
+      <p class="muted" id="syncmsg"></p></details>`;
+  }
+  return `<details class="syncbox" id="syncbox" open><summary>☁️ 기기 간 동기화 <b>설정하면 어디서든 이어서 할 수 있어요</b></summary>
+    <p class="muted">지금은 이 기기의 브라우저에만 저장돼요. 본인 GitHub 계정의 <b>비공개 Gist</b>에 자동으로 저장해 두면 PC·아이패드 어디서든 같은 진행 상황이 유지돼요. (서버 없음, 무료)</p>
+    <ol class="muted">
+      <li><a href="https://github.com/settings/tokens/new?scopes=gist&description=coding-practice-sync" target="_blank" rel="noopener">여기를 눌러 토큰 만들기 ↗</a> — 권한은 <code>gist</code> 하나만 체크된 상태로 열려요. 맨 아래 "Generate token"을 누르고 나온 토큰(ghp_…)을 복사하세요.</li>
+      <li>아래에 붙여넣고 "연결"을 누르세요. 다른 기기에서도 <b>같은 토큰</b>으로 연결하면 돼요.</li>
+    </ol>
+    <div class="tools"><input id="synctoken" type="password" placeholder="ghp_로 시작하는 토큰" autocomplete="off" autocapitalize="off" spellcheck="false"><button id="syncgo" class="primary">연결</button></div>
+    <p class="muted" id="syncmsg"></p>
+    <p class="muted" style="font-size:.82rem">토큰은 이 브라우저에만 저장되고 GitHub 말고는 어디로도 보내지 않아요. 연결 전에 있던 기록은 합쳐져서 사라지지 않아요.</p></details>`;
+}
+
+function syncLabel(st) {
+  return st.status === 'syncing' ? '동기화 중…' : st.status === 'error' ? '⚠️ ' + st.msg : st.status === 'ok' ? '✓ 동기화됨' : '';
+}
+
+function wireSync() {
+  const msg = document.getElementById('syncmsg');
+  const go = document.getElementById('syncgo');
+  if (go) go.onclick = async () => {
+    const token = document.getElementById('synctoken').value.trim();
+    if (!token) { msg.textContent = '토큰을 붙여넣어 주세요.'; return; }
+    go.disabled = true; msg.textContent = '연결하는 중…';
+    try { await connect(token); syncOpen = true; renderHome(); }
+    catch (e) { msg.textContent = '연결하지 못했어요: ' + e.message; go.disabled = false; }
+  };
+  const now = document.getElementById('syncnow');
+  if (now) now.onclick = async () => { msg.textContent = '동기화하는 중…'; await syncNow(); syncOpen = true; renderHome(); };
+  const off = document.getElementById('syncoff');
+  if (off) off.onclick = () => { if (confirm('연결을 해제할까요? 이 기기의 기록은 그대로 남아요.')) { disconnect(); syncOpen = false; renderHome(); } };
+}
+
 function renderHome() {
   renderNav('');
   $app.innerHTML = `
@@ -74,6 +118,7 @@ function renderHome() {
         <div class="muted" style="font-size:.85rem;margin-top:4px">${done} / ${total} 해결</div></a>
         ${c ? `<a class="play" href="#/p/${c.p.id}" title="${esc(c.p.title)}">▶ ${c.label}<span class="ptitle">${esc(c.p.title)}</span></a>` : ''}</div>`;
     }).join('')}</div>
+    ${syncBox()}
     <p><a class="notehome" href="#/n">📒 기초 노트 모음 — 막힐 때 펼쳐 보는 코드 정리 (${NOTES.length}개)</a></p>
     <div class="tools">
       <button id="exp">진행 상황 내보내기</button>
@@ -81,6 +126,7 @@ function renderHome() {
       <input type="file" id="impf" accept="application/json" hidden>
     </div>
     <p class="muted" style="font-size:.85rem">진행 상황은 이 기기의 브라우저에 저장돼요. 다른 기기에서 이어가려면 내보내기 → 가져오기를 사용하세요.</p>`;
+  wireSync();
   document.getElementById('exp').onclick = () => {
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([store.exportJson()], { type: 'application/json' }));
@@ -495,5 +541,19 @@ function route() {
     return;
   }
   addEventListener('hashchange', route);
+  const badge = document.getElementById('syncstat');
+  const paintBadge = st => {
+    if (!badge) return;
+    badge.hidden = !isConnected();
+    badge.textContent = st.status === 'syncing' ? '☁️ 동기화 중…' : st.status === 'error' ? '⚠️ 동기화 오류' : '☁️ 동기화됨';
+    badge.title = st.msg || '진행 상황이 GitHub Gist에 저장돼요';
+    const lbl = document.getElementById('synclabel');
+    if (lbl) lbl.textContent = syncLabel(st);
+  };
+  onStatus(paintBadge);
+  paintBadge(getState());
+  if (badge) badge.onclick = () => { location.hash = '#/'; };
   route();
+  // 다른 기기에서 바뀐 기록이 들어오면 목록 화면만 새로 그린다 (문제 풀이 중인 코드는 건드리지 않는다)
+  startSync(() => { const k = location.hash.replace(/^#\/?/, '').split('/')[0]; if (k !== 'p' && k !== 'n') route(); });
 })();

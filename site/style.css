@@ -115,3 +115,8 @@ html, body { overflow-x: hidden; }
 
 .keyhint{font-size:.82rem;margin:.4rem 0}
 kbd{border:1px solid var(--line);border-radius:4px;padding:0 .35em;font-size:.85em;background:var(--card)}
+
+.syncbox{margin:1rem 0;padding:.7rem 1rem;border:1px solid var(--line);border-radius:12px;background:var(--card)}
+.syncbox summary{cursor:pointer}
+.syncbox input{flex:1 1 14rem;min-width:0;padding:.5rem .7rem;border-radius:8px;border:1px solid var(--line);background:var(--bg,transparent);color:var(--text);font-size:1rem}
+.syncstat{margin-left:auto;border:0;background:transparent;color:var(--muted,#8a93a6);font-size:.82rem;cursor:pointer;padding:.2rem .5rem}
