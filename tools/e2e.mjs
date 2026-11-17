@@ -79,6 +79,25 @@ check('Ctrl+Shift+Enter 로 제출됨', (await page.innerText('#result')).includ
 await page.keyboard.press('Control+Enter');
 await page.waitForFunction(() => /status (ok|info|bad)/.test(document.getElementById('result').innerHTML), null, { timeout: 120000 });
 check('Ctrl+Enter 로 실행됨', (await page.innerText('#result')).length > 0);
+// 난이도순으로 풀다가 레벨 3까지 끝내면, 이어하기가 레벨 4 첫 문제를 가리킨다
+{
+  const idx = JSON.parse(fs.readFileSync('site/problems/index.json', 'utf8')).problems.filter(p => p.track === 'python');
+  const solved = Object.fromEntries(idx.filter(p => p.level <= 3).map(p => [p.id, 1]));
+  const lastL3 = idx.filter(p => p.level === 3).at(-1).id;
+  await page.goto(base);
+  const saved = await page.evaluate(() => localStorage.getItem('practice-platform:v1'));
+  await page.evaluate(([solved, last]) => {
+    localStorage.setItem('practice-platform:v1', JSON.stringify({ solved, code: {}, last: { python: last }, codeAt: {}, lastAt: { python: 1 }, prefs: { mode: 'level' }, prefsAt: { mode: 1 } }));
+  }, [solved, lastL3]);
+  await page.goto(base);
+  await page.reload();
+  await page.waitForSelector('.card .play');
+  const href = await page.locator('.card .play').nth(1).getAttribute('href');
+  const target = idx.find(p => href.endsWith('/' + p.id));
+  check('난이도순: 레벨 3까지 풀면 이어하기가 레벨 4 문제', target && target.level === 4, href);
+  await page.evaluate(v => localStorage.setItem('practice-platform:v1', v), saved);
+  await page.reload();
+}
 // 힌트 3단계: 버튼을 누를 때마다 힌트가 하나씩 열리고, 3번째는 확인창 뒤에 나온다
 page.on('dialog', d => d.accept());
 await page.goto(base + 'p/py-011');

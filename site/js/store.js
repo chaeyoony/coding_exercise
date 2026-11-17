@@ -1,7 +1,7 @@
 // 진행 상황 저장: 이 브라우저의 localStorage + (선택) 본인 GitHub 비공개 Gist 동기화(sync.js).
 // 기기가 여러 개여도 합쳐질 수 있게 풀이/코드/마지막 문제에 시간 기록을 남기고, 합칠 때는 더 최근 것을 쓴다.
 const KEY = 'practice-platform:v1';
-let mem = { solved: {}, code: {}, last: {}, codeAt: {}, lastAt: {} };
+let mem = { solved: {}, code: {}, last: {}, codeAt: {}, lastAt: {}, prefs: {}, prefsAt: {} };
 const listeners = [];
 
 function load() {
@@ -32,6 +32,13 @@ function merge(d) {
       mem.last[track] = id; mem.lastAt[track] = rAt;
     }
   }
+  for (const [k, v] of Object.entries(d.prefs || {})) {
+    const rAt = d.prefsAt?.[k] || 0;
+    if (!(k in mem.prefs) || rAt > (mem.prefsAt[k] || 0)) {
+      if (mem.prefs[k] !== v) changed = true;
+      mem.prefs[k] = v; mem.prefsAt[k] = rAt;
+    }
+  }
   return changed;
 }
 
@@ -40,6 +47,7 @@ function hasNews(d) {
   for (const id of Object.keys(mem.solved)) if (!d.solved?.[id]) return true;
   for (const id of Object.keys(mem.code)) if (!(id in (d.code || {})) || (mem.codeAt[id] || 0) > (d.codeAt?.[id] || 0)) return true;
   for (const t of Object.keys(mem.last)) if (!(t in (d.last || {})) || (mem.lastAt[t] || 0) > (d.lastAt?.[t] || 0)) return true;
+  for (const k of Object.keys(mem.prefs)) if (!(k in (d.prefs || {})) || (mem.prefsAt[k] || 0) > (d.prefsAt?.[k] || 0)) return true;
   return false;
 }
 
@@ -48,6 +56,8 @@ export const store = {
   markSolved(id) { if (mem.solved[id]) return; mem.solved[id] = Date.now(); save(); },
   getLast: track => mem.last[track],
   setLast(track, id) { if (mem.last[track] === id) return; mem.last[track] = id; mem.lastAt[track] = Date.now(); save(); },
+  getPref: (k, dflt) => (k in mem.prefs ? mem.prefs[k] : dflt),
+  setPref(k, v) { if (mem.prefs[k] === v) return; mem.prefs[k] = v; mem.prefsAt[k] = Date.now(); save(); },
   getCode: id => mem.code[id],
   setCode(id, code) { if (mem.code[id] === code) return; mem.code[id] = code; mem.codeAt[id] = Date.now(); save(); },
   exportJson: () => JSON.stringify(mem, null, 1),

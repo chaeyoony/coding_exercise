@@ -46,8 +46,17 @@ function progress(trackId) {
 }
 
 // 이어하기: 풀던 문제(안 풀었으면 그 문제, 풀었으면 그다음 안 푼 문제)로
-function continueTarget(trackId) {
+// 지금 보기 방식(단원별/난이도순)과 같은 순서의 문제 목록
+function orderedList(trackId) {
   const list = INDEX.filter(p => p.track === trackId);
+  if (view.mode !== 'level') return list;
+  const t = TRACKS.find(x => x.id === trackId);
+  const rank = Object.fromEntries(t.categories.map((c, i) => [c, i]));
+  return list.map((p, i) => [p, i]).sort((a, b) => (a[0].level - b[0].level) || ((rank[a[0].category] ?? 99) - (rank[b[0].category] ?? 99)) || (a[1] - b[1])).map(x => x[0]);
+}
+
+function continueTarget(trackId) {
+  const list = orderedList(trackId);
   if (!list.length) return null;
   const last = store.getLast(trackId);
   const i = last ? list.findIndex(p => p.id === last) : -1;
@@ -142,7 +151,7 @@ function renderHome() {
 }
 
 // ---------- 트랙 목록 ----------
-const view = { level: 0, unsolved: false, mode: (() => { try { return localStorage.getItem('pp:mode') || 'cat'; } catch (e) { return 'cat'; } })() };   // 목록 필터 (페이지를 옮겨도 유지)
+const view = { level: 0, unsolved: false, get mode() { return store.getPref('mode', (() => { try { return localStorage.getItem('pp:mode') || 'cat'; } catch (e) { return 'cat'; } })()); }, set mode(v) { store.setPref('mode', v); } };   // 목록 필터 (페이지를 옮겨도 유지)
 
 function renderTrack(id) {
   const t = TRACKS.find(x => x.id === id);
@@ -182,7 +191,7 @@ function renderTrack(id) {
       <span class="sep"></span>${chip(0, '전체')}${[1, 2, 3, 4, 5].map(n => chip(n, stars(n).replace(/☆/g, ''))).join('')}
       <button class="chip ${view.unsolved ? 'on' : ''}" id="unsolved">안 푼 문제만</button></div>
     ${sections || '<p class="muted">조건에 맞는 문제가 없어요.</p>'}`;
-  $app.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { view.mode = b.dataset.mode; try { localStorage.setItem('pp:mode', view.mode); } catch (e) { /* ignore */ } renderTrack(id); });
+  $app.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { view.mode = b.dataset.mode; renderTrack(id); });
   $app.querySelectorAll('[data-lv]').forEach(b => b.onclick = () => { view.level = Number(b.dataset.lv); renderTrack(id); });
   document.getElementById('unsolved').onclick = () => { view.unsolved = !view.unsolved; renderTrack(id); };
 }
@@ -261,7 +270,7 @@ async function renderProblem(id) {
   $app.innerHTML = '<p class="muted">불러오는 중…</p>';
   const p = await loadProblem(id);
   const track = TRACKS.find(t => t.id === p.track);
-  const list = INDEX.filter(x => x.track === p.track);
+  const list = orderedList(p.track);
   const pos = list.findIndex(x => x.id === id);
   const prev = list[pos - 1], next = list[pos + 1];
   store.setLast(p.track, id);
