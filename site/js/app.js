@@ -40,6 +40,18 @@ function tableHtml(t, max = 100, nullLabel = 'NULL') {
 }
 
 // ---------- 홈 ----------
+// 문제 화면 위쪽의 진행률 (이 언어 전체 / 이 단원)
+function progHtml(p) {
+  const t = progress(p.track);
+  const cat = INDEX.filter(x => x.track === p.track && x.category === p.category);
+  const cd = cat.filter(x => store.isSolved(x.id)).length;
+  const pct = (a, b) => (b ? Math.round(100 * a / b) : 0);
+  const tp = pct(t.done, t.total);
+  return `<div class="pprog-row"><span><b>전체 진행률 ${tp}%</b> <span class="muted">(${t.done} / ${t.total} 문제)</span></span>
+    <span class="muted">이 단원 ${cd} / ${cat.length} (${pct(cd, cat.length)}%)</span></div>
+    <div class="bar"><i style="width:${tp}%"></i></div>`;
+}
+
 function progress(trackId) {
   const list = INDEX.filter(p => p.track === trackId);
   return { done: list.filter(p => store.isSolved(p.id)).length, total: list.length };
@@ -279,6 +291,7 @@ async function renderProblem(id) {
 
   $app.innerHTML = `
     <div class="muted" style="font-size:.9rem"><a href="#/t/${p.track}">${track.icon} ${esc(track.name)}</a> › ${esc(p.category)}</div>
+    <div class="pprog" id="pprog">${progHtml(p)}</div>
     <h1>${esc(p.title)} ${store.isSolved(id) ? '<span class="badge" style="background:var(--ok-soft);color:var(--ok)">해결함 ✓</span>' : ''}</h1>
     <div class="pgrid">
       <section class="panel desc">
@@ -346,7 +359,7 @@ async function renderProblem(id) {
       const eng = await getEngine(p.track);
       await eng.ensure(setStatus);
       await judge(p, eng, $code.value, submit, $res, setStatus);
-      if (submit && $res.querySelector('.status.ok')) offerNext(next, $res);
+      if (submit && $res.querySelector('.status.ok')) { offerNext(next, $res); const pg = document.getElementById('pprog'); if (pg) pg.innerHTML = progHtml(p); }
     } catch (e) {
       $res.innerHTML = `<div class="status bad">엔진을 불러오지 못했어요: ${esc(e.message || e)}</div>`;
     }

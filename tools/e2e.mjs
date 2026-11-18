@@ -122,6 +122,10 @@ await page.focus('#code');
 await page.keyboard.press('Meta+Shift+Enter');
 await page.waitForFunction(() => /모든 테스트/.test(document.getElementById('result').innerHTML), null, { timeout: 120000 });
 check('Command+Shift+Enter 로 제출됨', true);
+// 문제 화면의 진행률 표시
+await page.goto(base + 'p/py-011');
+await page.waitForSelector('#pprog');
+check('문제 화면에 전체 진행률(%)이 보임', /전체 진행률 \d+%/.test(await page.innerText('#pprog')));
 // 힌트 3단계: 버튼을 누를 때마다 힌트가 하나씩 열리고, 3번째는 확인창 뒤에 나온다
 page.on('dialog', d => d.accept());
 await page.goto(base + 'p/py-011');
