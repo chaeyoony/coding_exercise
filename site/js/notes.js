@@ -535,6 +535,9 @@ export const CATEGORY_NOTES = {
   // SQL
   '기초 조회': ['sql-basics'], '집계': ['sql-basics', 'sql-join-agg'], '조인': ['sql-join-agg'],
   '서브쿼리·응용': ['sql-sub-window'], '윈도우 함수': ['sql-sub-window'],
+  // 파이썬 퀴즈
+  '중간고사 ① 변수·자료형·입출력': ['py-basics', 'py-str'], '중간고사 ② 연산자·조건문': ['py-basics', 'py-flow'], '중간고사 ③ 반복문': ['py-flow'], '중간고사 ④ 문자열·리스트': ['py-str', 'py-containers'],
+  '7강 개념 퀴즈': ['py-containers'], '9강 개념 퀴즈': ['py-containers'], '10강 개념 퀴즈': ['py-func', 'py-lambda'], '11강 개념 퀴즈': ['py-class'],
   // 파이썬
   '기초 문법': ['py-basics', 'r-basics'], '기초 출력·조건·반복': ['py-basics', 'py-flow', 'r-basics'], '문자열 다루기': S,
   '7강 리스트': ['py-containers'], '9강 튜플·집합': C, '9강 딕셔너리': C,

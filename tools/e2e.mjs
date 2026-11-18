@@ -126,6 +126,27 @@ check('Command+Shift+Enter 로 제출됨', true);
 await page.goto(base + 'p/py-011');
 await page.waitForSelector('#pprog');
 check('문제 화면에 전체 진행률(%)이 보임', /전체 진행률 \d+%/.test(await page.innerText('#pprog')));
+// OX·객관식 퀴즈: 오답 → 정답, 직접 실행해 보기, 힌트
+{
+  const qz = JSON.parse(fs.readFileSync('site/problems/py-581.json', 'utf8'));
+  await page.goto(base + 'p/py-581');
+  await page.waitForSelector('#qsubmit');
+  const wrong = (qz.quiz.answer + 1) % qz.quiz.choices.length;
+  await page.check(`input[name="qc"][value="${wrong}"]`);
+  await page.click('#qsubmit');
+  check('퀴즈: 오답이면 안내', (await page.innerText('#result')).includes('오답'));
+  await page.check(`input[name="qc"][value="${qz.quiz.answer}"]`);
+  await page.click('#qsubmit');
+  check('퀴즈: 정답이면 통과와 해설', (await page.innerText('#result')).includes('정답이에요') && (await page.innerText('#result')).includes('해설'));
+  await page.click('#run');
+  await page.waitForFunction(() => /출력/.test(document.getElementById('runres').innerText), null, { timeout: 120000 });
+  check('퀴즈: 직접 실행해 보기', (await page.innerText('#runres')).includes('5 14'));
+  await page.goto(base + 'p/py-581');
+  await page.waitForSelector('#hintbtn');
+  page.once('dialog', d => d.accept());
+  await page.click('#hintbtn'); await page.click('#hintbtn'); await page.click('#hintbtn');
+  check('퀴즈: 힌트 3단계', (await page.locator('#hintlist details.hint').count()) === 3);
+}
 // 힌트 3단계: 버튼을 누를 때마다 힌트가 하나씩 열리고, 3번째는 확인창 뒤에 나온다
 page.on('dialog', d => d.accept());
 await page.goto(base + 'p/py-011');

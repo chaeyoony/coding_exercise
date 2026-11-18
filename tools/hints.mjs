@@ -118,6 +118,15 @@ export function skeleton(p) {
 
 export function makeHints(p) {
   if (Array.isArray(p.hints) && p.hints.length === 3) return p.hints;
+  if (p.quiz) {
+    const h1 = p.hint || '<p>문제를 천천히 다시 읽고, 코드라면 위에서 아래로 한 줄씩 직접 따라가 보세요.</p>';
+    const h2 = p.code
+      ? '<p>문제 아래 <b>"🧪 직접 실행해 보기"</b> 칸에서 코드를 실행해 보면 정답을 확인할 수 있어요. 손으로 먼저 따라가 보고, 실행 결과와 맞춰 보세요.</p>'
+      : '<p>보기를 하나씩 직접 코드로 만들어 실행해 보면 확실해요. 틀린 보기를 하나씩 지워 나가는 것도 좋은 방법이에요.</p>';
+    const label = p.choices.length === 2 && p.choices[0] === '참' ? p.choices[p.quiz.answer] : `${p.quiz.answer + 1}번`;
+    const h3 = `<p>정답은 <b>${esc(label)}</b>이에요. 왜 그런지 읽어 보세요.</p><div class="desc">${p.explain}</div>`;
+    return [h1, h2, h3];
+  }
   if (p.predict || !p.solution) return null;
   const h1 = p.hint || '<p>문제 설명을 한 번 더 읽고, 필요한 값이 무엇인지부터 정리해 보세요.</p>';
   const h2 = `<p>코드의 <b>뼈대</b>예요. <code>___</code> 자리에 들어갈 내용을 직접 채워 보세요.</p><pre class="out">${esc(skeleton(p))}</pre>`;

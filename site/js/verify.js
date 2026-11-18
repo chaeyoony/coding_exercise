@@ -25,6 +25,37 @@ async function verifyOne(p) {
   const base = { datasets, packages: p.packages || [], setup: p.setup || '' };
   const pub = { ...p };
   delete pub.cross;
+  delete pub.verify;
+
+
+  if (p.quiz) {
+    // OX·객관식: 정답 번호는 문제의 코드를 실제로 실행해서 정한다 (직접 적은 정답을 믿지 않는다)
+    const v = p.verify || {};
+    const run = code => eng.runScript({ ...base, code, prelude: '' });
+    let match = [];
+    if (v.claim) {
+      const r = await run(v.claim);
+      const out = r.ok ? normOut(r.stdout) : '';
+      if (out !== 'True' && out !== 'False') return { pub, errors: ['claim 코드가 True/False를 출력하지 않아요: ' + (r.error || out)] };
+      match = [out === 'True', out === 'False'];
+    } else if (v.outs) {
+      const r = await run(p.code);
+      match = v.outs.map(o => (o === null ? !r.ok : r.ok && normOut(String(o)) === normOut(r.stdout)));
+      if (!match.some(Boolean)) problems.push('실행 결과와 일치하는 보기가 없어요: ' + (r.ok ? JSON.stringify(r.stdout) : '오류 ' + r.error));
+    } else if (v.codes) {
+      for (const c of v.codes) {
+        const r = await run(c);
+        match.push(v.expect === 'error' ? !r.ok : r.ok && normOut(r.stdout) === normOut(v.expect));
+      }
+    } else if (typeof v.manual === 'number') {
+      match = p.choices.map((_, i) => i === v.manual);
+    } else return { pub, errors: ['verify 설정이 없어요'] };
+    if (match.length !== p.choices.length) problems.push(`보기 개수(${p.choices.length})와 검증 결과(${match.length})가 달라요`);
+    if (match.filter(Boolean).length !== 1) problems.push(`정답이 정확히 1개여야 해요: ${JSON.stringify(match)}`);
+    pub.quiz = { choices: p.choices, answer: match.indexOf(true) };
+    if (!p.explain) problems.push('해설(explain)이 없어요');
+    return { pub, errors: problems };
+  }
 
   if (p.predict) {
     const r = await eng.runScript({ ...base, code: p.code, prelude: '' });

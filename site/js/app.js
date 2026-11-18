@@ -281,6 +281,7 @@ async function renderProblem(id) {
   renderNav(meta.track);
   $app.innerHTML = '<p class="muted">불러오는 중…</p>';
   const p = await loadProblem(id);
+  if (p.quiz) return renderQuiz(p);
   const track = TRACKS.find(t => t.id === p.track);
   const list = orderedList(p.track);
   const pos = list.findIndex(x => x.id === id);
@@ -435,6 +436,86 @@ function wireHints(p) {
 }
 
 const looseOut = t => normOut(t).split('\n').map(l => l.replace(/[ \t]+/g, ' ').trim()).join('\n');
+
+// ---------- OX·객관식 퀴즈 ----------
+async function renderQuiz(p) {
+  const id = p.id;
+  const track = TRACKS.find(t => t.id === p.track);
+  const list = orderedList(p.track);
+  const pos = list.findIndex(x => x.id === id);
+  const prev = list[pos - 1], next = list[pos + 1];
+  store.setLast(p.track, id);
+  const ox = p.quiz.choices.length === 2 && p.quiz.choices[0] === '참';
+  const choices = p.quiz.choices.map((c, i) => `<label class="qchoice"><input type="radio" name="qc" value="${i}"><span>${ox ? '' : `${i + 1}. `}${esc(c)}</span></label>`).join('');
+  $app.innerHTML = `
+    <div class="muted" style="font-size:.9rem"><a href="#/t/${p.track}">${track.icon} ${esc(track.name)}</a> › ${esc(p.category)}</div>
+    <div class="pprog" id="pprog">${progHtml(p)}</div>
+    <h1>${esc(p.title)} ${store.isSolved(id) ? '<span class="badge" style="background:var(--ok-soft);color:var(--ok)">해결함 ✓</span>' : ''}</h1>
+    <div class="pgrid">
+      <section class="panel desc">
+        <span class="badge">난이도 ${stars(p.level)}</span><span class="badge">${esc(p.category)}</span><span class="badge">${ox ? 'OX' : '객관식'}</span>
+        ${p.desc}
+        <div class="qchoices" id="qchoices">${choices}</div>
+        <div class="actions"><button id="qsubmit" class="primary">제출</button><button id="qshow">정답·해설 보기</button>${next ? '<button id="nextbtn" type="button" class="ghost">다음 문제 →</button>' : ''}</div>
+        <div id="result"></div>
+        ${hintBox(p)}
+        ${noteLinks(p)}
+      </section>
+      <section class="panel">
+        ${p.code ? `<h2>🧪 직접 실행해 보기</h2><p class="muted">코드를 고쳐 가며 실행해 보세요. 정답 판정과는 상관없어요.</p>
+          <textarea id="code" class="code" spellcheck="false" autocapitalize="off" autocorrect="off" autocomplete="off"></textarea>
+          <div class="actions"><button id="run">▶ 실행</button><button id="reset">처음 코드로</button></div><div id="runres"></div>`
+          : '<p class="muted">이 문제는 개념을 묻는 문제예요. 막히면 힌트를 열어 보세요.</p>'}
+      </section>
+    </div>
+    <div class="pn"><span>${prev ? `<a href="#/p/${prev.id}">← ${esc(prev.title)}</a>` : ''}</span><span>${next ? `<a href="#/p/${next.id}">${esc(next.title)} →</a>` : ''}</span></div>`;
+  wireHints(p);
+  const $res = document.getElementById('result');
+  const answerText = () => (ox ? p.quiz.choices[p.quiz.answer] : `${p.quiz.answer + 1}번 (${p.quiz.choices[p.quiz.answer]})`);
+  const explainHtml = `<div class="desc" style="margin-top:.5rem"><b>해설</b><br>${p.explain}</div>`;
+  document.getElementById('qsubmit').onclick = () => {
+    const sel = document.querySelector('input[name="qc"]:checked');
+    if (!sel) { $res.innerHTML = '<div class="status info">보기를 먼저 골라 주세요.</div>'; return; }
+    const ok = Number(sel.value) === p.quiz.answer;
+    if (ok) {
+      store.markSolved(id);
+      $res.innerHTML = `<div class="status ok">🎉 정답이에요!</div>${explainHtml}`;
+      offerNext(next, $res);
+      const pg = document.getElementById('pprog'); if (pg) pg.innerHTML = progHtml(p);
+    } else {
+      $res.innerHTML = '<div class="status bad">아쉬워요, 오답이에요. 다시 골라 보세요. (막히면 힌트를 열어 보거나 아래 "직접 실행해 보기"를 써 보세요)</div>';
+    }
+  };
+  document.getElementById('qshow').onclick = () => {
+    if (!confirm('정답을 보면 스스로 풀 기회가 줄어요. 그래도 볼까요?')) return;
+    $res.innerHTML = `<div class="status info">정답: <b>${esc(answerText())}</b></div>${explainHtml}`;
+  };
+  const nb = document.getElementById('nextbtn');
+  if (nb) nb.onclick = () => { location.hash = `#/p/${next.id}`; };
+  document.addEventListener('keydown', function onKey(e) {
+    if (!location.hash.endsWith('/' + id)) { document.removeEventListener('keydown', onKey); return; }
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey) && document.activeElement?.tagName !== 'TEXTAREA') document.getElementById('qsubmit')?.click();
+  });
+  const $code = document.getElementById('code');
+  if ($code) {
+    $code.value = p.code;
+    $code.addEventListener('keydown', e => { if (e.key === 'Tab') { e.preventDefault(); $code.setRangeText('    ', $code.selectionStart, $code.selectionEnd, 'end'); } });
+    document.getElementById('reset').onclick = () => { $code.value = p.code; };
+    const runBtn = document.getElementById('run');
+    runBtn.onclick = async () => {
+      const out = document.getElementById('runres');
+      runBtn.disabled = true;
+      out.innerHTML = '<div class="status info">실행 중…</div>';
+      try {
+        const eng = await getEngine(p.track);
+        await eng.ensure(msg => { out.innerHTML = `<div class="status info">${esc(msg)}</div>`; });
+        const r = await eng.runScript({ code: $code.value, prelude: '', datasets: {}, packages: p.packages || [] }, msg => { out.innerHTML = `<div class="status info">${esc(msg)}</div>`; });
+        out.innerHTML = r.ok ? `<div class="muted">출력</div><pre class="out">${esc(r.stdout || '(출력 없음)')}</pre>` : `<div class="status bad">오류가 났어요\n${esc(r.error)}</div>`;
+      } catch (e) { out.innerHTML = `<div class="status bad">${esc(e.message || e)}</div>`; }
+      runBtn.disabled = false;
+    };
+  }
+}
 
 async function judge(p, eng, code, submit, $res, setStatus) {
   if (p.predict) {
