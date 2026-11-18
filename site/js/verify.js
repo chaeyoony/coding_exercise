@@ -39,13 +39,13 @@ async function verifyOne(p) {
       if (out !== 'True' && out !== 'False') return { pub, errors: ['claim 코드가 True/False를 출력하지 않아요: ' + (r.error || out)] };
       match = [out === 'True', out === 'False'];
     } else if (v.outs) {
-      const r = await run(p.code);
+      const r = await run(v.code ?? p.code);
       match = v.outs.map(o => (o === null ? !r.ok : r.ok && normOut(String(o)) === normOut(r.stdout)));
       if (!match.some(Boolean)) problems.push('실행 결과와 일치하는 보기가 없어요: ' + (r.ok ? JSON.stringify(r.stdout) : '오류 ' + r.error));
     } else if (v.codes) {
       for (const c of v.codes) {
         const r = await run(c);
-        match.push(v.expect === 'error' ? !r.ok : r.ok && normOut(r.stdout) === normOut(v.expect));
+        match.push(v.expect === 'error' ? !r.ok : v.expect === 'ok' ? r.ok : r.ok && normOut(r.stdout) === normOut(v.expect));
       }
     } else if (typeof v.manual === 'number') {
       match = p.choices.map((_, i) => i === v.manual);
