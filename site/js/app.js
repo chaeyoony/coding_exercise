@@ -42,12 +42,17 @@ function tableHtml(t, max = 100, nullLabel = 'NULL') {
 // ---------- 홈 ----------
 // 문제 화면 위쪽의 진행률 (이 언어 전체 / 이 단원)
 function progHtml(p) {
-  const t = progress(p.track);
+  // 코딩 문제와 퀴즈가 둘 다 있는 언어는 지금 풀고 있는 종류(코딩/퀴즈)만의 진행률을 보여 준다
+  const kinds = [...new Set(INDEX.filter(x => x.track === p.track).map(kindOf))];
+  const k = kindOf(p);
+  const list = INDEX.filter(x => x.track === p.track && (kinds.length < 2 || kindOf(x) === k));
+  const done = list.filter(x => store.isSolved(x.id)).length;
   const cat = INDEX.filter(x => x.track === p.track && x.category === p.category);
   const cd = cat.filter(x => store.isSolved(x.id)).length;
   const pct = (a, b) => (b ? Math.round(100 * a / b) : 0);
-  const tp = pct(t.done, t.total);
-  return `<div class="pprog-row"><span><b>전체 진행률 ${tp}%</b> <span class="muted">(${t.done} / ${t.total} 문제)</span></span>
+  const tp = pct(done, list.length);
+  const label = kinds.length < 2 ? '전체' : (k === 'quiz' ? '퀴즈' : '코딩 문제');
+  return `<div class="pprog-row"><span><b>${label} 진행률 ${tp}%</b> <span class="muted">(${done} / ${list.length} 문제)</span></span>
     <span class="muted">이 단원 ${cd} / ${cat.length} (${pct(cd, cat.length)}%)</span></div>
     <div class="bar"><i style="width:${tp}%"></i></div>`;
 }
