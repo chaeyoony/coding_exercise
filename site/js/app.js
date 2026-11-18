@@ -59,8 +59,9 @@ function progress(trackId) {
 
 // 이어하기: 풀던 문제(안 풀었으면 그 문제, 풀었으면 그다음 안 푼 문제)로
 // 지금 보기 방식(단원별/난이도순)과 같은 순서의 문제 목록
-function orderedList(trackId) {
-  const list = INDEX.filter(p => p.track === trackId);
+function orderedList(trackId, kind) {
+  let list = INDEX.filter(p => p.track === trackId);
+  if (kind) list = list.filter(p => kindOf(p) === kind);
   if (view.mode !== 'level') return list;
   const t = TRACKS.find(x => x.id === trackId);
   const rank = Object.fromEntries(t.categories.map((c, i) => [c, i]));
@@ -68,9 +69,10 @@ function orderedList(trackId) {
 }
 
 function continueTarget(trackId) {
-  const list = orderedList(trackId);
-  if (!list.length) return null;
   const last = store.getLast(trackId);
+  const lastP = last ? INDEX.find(p => p.id === last) : null;
+  const list = orderedList(trackId, lastP ? kindOf(lastP) : trackKind(trackId));
+  if (!list.length) return null;
   const i = last ? list.findIndex(p => p.id === last) : -1;
   if (i >= 0) {
     if (!store.isSolved(list[i].id)) return { p: list[i], label: '이어서 풀기' };
@@ -81,6 +83,10 @@ function continueTarget(trackId) {
   const first = list.find(p => !store.isSolved(p.id));
   return first ? { p: first, label: '시작하기' } : { p: list[0], label: '처음부터 다시' };
 }
+
+// 파이썬처럼 코딩 문제와 퀴즈가 모두 있는 언어는 두 하위 섹션으로 나눠 보여 준다
+const trackKinds = tid => [...new Set(INDEX.filter(p => p.track === tid).map(kindOf))];
+const trackKind = tid => { const ks = trackKinds(tid); const k = store.getPref('kind:' + tid, 'code'); return ks.includes(k) ? k : (ks[0] || 'code'); };
 
 let syncOpen = false;   // 방금 연결했으면 펼쳐서 결과를 보여준다
 function syncBox() {
@@ -163,6 +169,7 @@ function renderHome() {
 }
 
 // ---------- 트랙 목록 ----------
+const kindOf = p => p.kind || (p.quiz ? 'quiz' : 'code');
 const view = { level: 0, unsolved: false, get mode() { return store.getPref('mode', (() => { try { return localStorage.getItem('pp:mode') || 'cat'; } catch (e) { return 'cat'; } })()); }, set mode(v) { store.setPref('mode', v); } };   // 목록 필터 (페이지를 옮겨도 유지)
 
 function renderTrack(id) {
@@ -170,6 +177,9 @@ function renderTrack(id) {
   if (!t) return renderHome();
   renderNav(id);
   const { done, total } = progress(id);
+  const kinds = trackKinds(id);
+  const kind = trackKind(id);
+  const inKind = p => kindOf(p) === kind;
   const keep = p => (!view.level || p.level === view.level) && (!view.unsolved || !store.isSolved(p.id));
   const row = (p, showCat) => `
       <li><a href="#/p/${p.id}"><span class="chk">${store.isSolved(p.id) ? '✓' : ''}</span>
@@ -178,7 +188,7 @@ function renderTrack(id) {
   if (view.mode === 'level') {
     const rank = Object.fromEntries(t.categories.map((c, i) => [c, i]));
     sections = [1, 2, 3, 4, 5].map(lv => {
-      const all = INDEX.filter(p => p.track === id && p.level === lv).sort((a, b) => (rank[a.category] ?? 99) - (rank[b.category] ?? 99));
+      const all = INDEX.filter(p => p.track === id && p.level === lv && inKind(p)).sort((a, b) => (rank[a.category] ?? 99) - (rank[b.category] ?? 99));
       const list = all.filter(keep);
       if (!list.length) return '';
       const d = all.filter(p => store.isSolved(p.id)).length;
@@ -187,7 +197,7 @@ function renderTrack(id) {
     }).join('');
   } else {
     sections = t.categories.map(cat => {
-      const all = INDEX.filter(p => p.track === id && p.category === cat);
+      const all = INDEX.filter(p => p.track === id && p.category === cat && inKind(p));
       if (!all.length) return '';
       const list = all.filter(keep);
       if (!list.length) return '';
@@ -196,13 +206,18 @@ function renderTrack(id) {
       <ul class="plist">${list.map(p => row(p, false)).join('')}</ul></details>`;
     }).join('');
   }
+  const kcount = k => INDEX.filter(p => p.track === id && kindOf(p) === k);
+  const kdone = k => kcount(k).filter(p => store.isSolved(p.id)).length;
+  const kindTabs = kinds.length > 1 ? `<div class="kindtabs">${[['code', '💻 코딩 문제'], ['quiz', '📝 OX·객관식 퀴즈']].filter(([k]) => kinds.includes(k)).map(([k, label]) => `<button class="kindtab ${kind === k ? 'on' : ''}" data-kind="${k}">${label}<span class="muted"> ${kdone(k)} / ${kcount(k).length}</span></button>`).join('')}</div>` : '';
   const chip = (lv, label) => `<button class="chip ${view.level === lv ? 'on' : ''}" data-lv="${lv}">${label}</button>`;
   $app.innerHTML = `<h1>${t.icon} ${esc(t.name)}</h1>
     <p class="muted">${esc(t.desc)} · ${done} / ${total} 해결 · 실행 환경: ${esc(t.lang)}</p>
+    ${kindTabs}
     <div class="filters"><button class="chip ${view.mode === 'cat' ? 'on' : ''}" data-mode="cat">📚 단원별</button><button class="chip ${view.mode === 'level' ? 'on' : ''}" data-mode="level">📶 난이도순</button>
       <span class="sep"></span>${chip(0, '전체')}${[1, 2, 3, 4, 5].map(n => chip(n, stars(n).replace(/☆/g, ''))).join('')}
       <button class="chip ${view.unsolved ? 'on' : ''}" id="unsolved">안 푼 문제만</button></div>
     ${sections || '<p class="muted">조건에 맞는 문제가 없어요.</p>'}`;
+  $app.querySelectorAll('[data-kind]').forEach(b => b.onclick = () => { store.setPref('kind:' + id, b.dataset.kind); renderTrack(id); });
   $app.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { view.mode = b.dataset.mode; renderTrack(id); });
   $app.querySelectorAll('[data-lv]').forEach(b => b.onclick = () => { view.level = Number(b.dataset.lv); renderTrack(id); });
   document.getElementById('unsolved').onclick = () => { view.unsolved = !view.unsolved; renderTrack(id); };
@@ -283,7 +298,7 @@ async function renderProblem(id) {
   const p = await loadProblem(id);
   if (p.quiz) return renderQuiz(p);
   const track = TRACKS.find(t => t.id === p.track);
-  const list = orderedList(p.track);
+  const list = orderedList(p.track, kindOf(p));
   const pos = list.findIndex(x => x.id === id);
   const prev = list[pos - 1], next = list[pos + 1];
   store.setLast(p.track, id);
@@ -441,7 +456,7 @@ const looseOut = t => normOut(t).split('\n').map(l => l.replace(/[ \t]+/g, ' ').
 async function renderQuiz(p) {
   const id = p.id;
   const track = TRACKS.find(t => t.id === p.track);
-  const list = orderedList(p.track);
+  const list = orderedList(p.track, kindOf(p));
   const pos = list.findIndex(x => x.id === id);
   const prev = list[pos - 1], next = list[pos + 1];
   store.setLast(p.track, id);

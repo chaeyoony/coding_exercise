@@ -147,6 +147,17 @@ check('문제 화면에 전체 진행률(%)이 보임', /전체 진행률 \d+%/.
   await page.click('#hintbtn'); await page.click('#hintbtn'); await page.click('#hintbtn');
   check('퀴즈: 힌트 3단계', (await page.locator('#hintlist details.hint').count()) === 3);
 }
+// 파이썬: 코딩 문제 / 퀴즈 하위 섹션이 따로 있다
+await page.goto(base.replace('#/', '#/t/python'));
+await page.waitForSelector('.kindtab');
+await page.click('[data-mode="cat"]');
+await page.click('[data-kind="code"]');
+let heads = await page.locator('details.cat summary b').allInnerTexts();
+check('코딩 섹션: 코딩 단원만 (퀴즈 단원 없음)', heads.some(h => h.includes('워크북 1장 Python 소개')) && !heads.some(h => h.includes('개념 퀴즈') || h.includes('중간고사')), heads.slice(0, 5).join(','));
+await page.click('[data-kind="quiz"]');
+heads = await page.locator('details.cat summary b').allInnerTexts();
+check('퀴즈 섹션: 퀴즈 단원만 (코딩 단원 없음)', heads.some(h => h.includes('워크북 1장 개념 퀴즈')) && heads.some(h => h.includes('중간고사')) && !heads.some(h => h.includes('Python 소개와 첫 프로그램')), heads.slice(0, 5).join(','));
+await page.click('[data-kind="code"]');
 // 힌트 3단계: 버튼을 누를 때마다 힌트가 하나씩 열리고, 3번째는 확인창 뒤에 나온다
 page.on('dialog', d => d.accept());
 await page.goto(base + 'p/py-011');

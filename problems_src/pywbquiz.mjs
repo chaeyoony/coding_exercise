@@ -34,12 +34,12 @@ const errname = (category, level, title, question, choices, name, explain, hint,
 const codeOut = (category, level, title, question, choices, expect, explain, hint) => base(category, level, title, `<p>${question}</p>`,
   { choices, verify: { codes: choices, expect }, code: `# 보기를 하나씩 실행해 보세요\n${choices.map(c => '# ' + c.split('\n').join('\n# ')).join('\n')}\n`, explain, hint });
 
-const W1 = '워크북 1장 Python 소개와 첫 프로그램';
-const W2 = '워크북 2장 변수와 자료형';
-const W3 = '워크북 3장 입출력과 포맷팅';
-const W4 = '워크북 4장 연산자와 조건문';
-const W5 = '워크북 5장 반복문';
-const W6 = '워크북 6장 문자열';
+const W1 = '워크북 1장 개념 퀴즈';
+const W2 = '워크북 2장 개념 퀴즈';
+const W3 = '워크북 3장 개념 퀴즈';
+const W4 = '워크북 4장 개념 퀴즈';
+const W5 = '워크북 5장 개념 퀴즈';
+const W6 = '워크북 6장 개념 퀴즈';
 
 export default [
   // ================= 1장 개념 =================

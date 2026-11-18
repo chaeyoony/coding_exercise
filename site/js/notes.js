@@ -537,6 +537,7 @@ export const CATEGORY_NOTES = {
   '서브쿼리·응용': ['sql-sub-window'], '윈도우 함수': ['sql-sub-window'],
   // 파이썬 워크북
   '워크북 1장 Python 소개와 첫 프로그램': ['py-basics', 'py-flow'], '워크북 2장 변수와 자료형': ['py-basics'], '워크북 3장 입출력과 포맷팅': ['py-basics', 'py-str'], '워크북 4장 연산자와 조건문': ['py-basics', 'py-flow'], '워크북 5장 반복문': ['py-flow', 'py-str'], '워크북 6장 문자열': ['py-str', 'py-containers'],
+  '워크북 1장 개념 퀴즈': ['py-basics', 'py-flow'], '워크북 2장 개념 퀴즈': ['py-basics'], '워크북 3장 개념 퀴즈': ['py-basics', 'py-str'], '워크북 4장 개념 퀴즈': ['py-basics', 'py-flow'], '워크북 5장 개념 퀴즈': ['py-flow', 'py-str'], '워크북 6장 개념 퀴즈': ['py-str', 'py-containers'],
   // 파이썬 퀴즈
   '중간고사 ① 변수·자료형·입출력': ['py-basics', 'py-str'], '중간고사 ② 연산자·조건문': ['py-basics', 'py-flow'], '중간고사 ③ 반복문': ['py-flow'], '중간고사 ④ 문자열·리스트': ['py-str', 'py-containers'],
   '심화 퀴즈 ① 변수·연산·문자열': ['py-basics', 'py-str'], '심화 퀴즈 ② 제어문·반복': ['py-flow', 'py-comp'], '심화 퀴즈 ③ 리스트·딕셔너리·집합': ['py-containers', 'py-comp'], '심화 퀴즈 ④ 함수·람다·스코프': ['py-func', 'py-lambda', 'py-iter-deco'], '심화 퀴즈 ⑤ 클래스·예외': ['py-class', 'py-err-lib'],
