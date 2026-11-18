@@ -52,7 +52,19 @@ async function verifyOne(p) {
     } else return { pub, errors: ['verify 설정이 없어요'] };
     if (match.length !== p.choices.length) problems.push(`보기 개수(${p.choices.length})와 검증 결과(${match.length})가 달라요`);
     if (match.filter(Boolean).length !== 1) problems.push(`정답이 정확히 1개여야 해요: ${JSON.stringify(match)}`);
-    pub.quiz = { choices: p.choices, answer: match.indexOf(true) };
+    // 정답이 늘 같은 번호에 몰리지 않도록 보기 순서를 문제마다 고정된 방식으로 섞는다 (OX는 그대로)
+    let choices = p.choices, answer = match.indexOf(true);
+    if (!(p.choices.length === 2 && p.choices[0] === '참')) {
+      let seed = 0;
+      for (const ch of p.id) seed = (seed * 131 + ch.charCodeAt(0)) >>> 0;
+      const rnd = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; };
+      const order = p.choices.map((_, i) => i);
+      for (let i = order.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; }
+      choices = order.map(i => p.choices[i]);
+      answer = order.indexOf(answer);
+      pub.choices = choices;
+    }
+    pub.quiz = { choices, answer };
     if (!p.explain) problems.push('해설(explain)이 없어요');
     return { pub, errors: problems };
   }
