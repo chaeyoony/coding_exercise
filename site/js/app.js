@@ -131,7 +131,7 @@ function wireSync() {
     catch (e) { msg.textContent = '연결하지 못했어요: ' + e.message; go.disabled = false; }
   };
   const now = document.getElementById('syncnow');
-  if (now) now.onclick = async () => { msg.textContent = '동기화하는 중…'; await syncNow(); syncOpen = true; renderHome(); };
+  if (now) now.onclick = async () => { msg.textContent = '동기화하는 중…'; await syncNow(true); syncOpen = true; renderHome(); };
   const off = document.getElementById('syncoff');
   if (off) off.onclick = () => { if (confirm('연결을 해제할까요? 이 기기의 기록은 그대로 남아요.')) { disconnect(); syncOpen = false; renderHome(); } };
 }

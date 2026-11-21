@@ -19,6 +19,7 @@ async function mock(ctx) {
     const req = route.request();
     const cors = { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': '*' };
     if (req.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: cors });
+    if (/Bearer tok-limited/.test(req.headers().authorization || '')) return route.fulfill({ status: 403, headers: { ...cors, 'retry-after': '60' }, body: JSON.stringify({ message: 'You have exceeded a secondary rate limit.' }), contentType: 'application/json' });
     if (!/Bearer tok-good/.test(req.headers().authorization || '')) return route.fulfill({ status: 401, headers: cors, body: '{}', contentType: 'application/json' });
     calls++;
     const u = new URL(req.url());
@@ -43,6 +44,11 @@ await A.fill('#synctoken', 'tok-bad');
 await A.click('#syncgo');
 await A.waitForFunction(() => /연결하지 못했어요/.test(document.getElementById('syncmsg')?.textContent || ''));
 check('잘못된 토큰은 오류 안내', (await A.innerText('#syncmsg')).includes('토큰'));
+await A.fill('#synctoken', 'tok-limited');
+await A.click('#syncgo');
+await A.waitForFunction(() => /연결하지 못했어요/.test(document.getElementById('syncmsg')?.textContent || ''));
+const limitedMsg = await A.innerText('#syncmsg');
+check('요청 제한(403)이면 이유와 자동 재시도를 안내', limitedMsg.includes('너무 잦') && limitedMsg.includes('secondary rate limit'), limitedMsg);
 await A.fill('#synctoken', 'tok-good');
 await A.click('#syncgo');
 await A.waitForSelector('#syncnow', { timeout: 15000 });
@@ -70,7 +76,7 @@ const sol = JSON.parse(fs.readFileSync('site/problems/py-004.json', 'utf8')).sol
 await B.fill('#code', sol);
 await B.click('#submit');
 await B.waitForFunction(() => /status ok/.test(document.getElementById('result').innerHTML), null, { timeout: 120000 });
-await B.waitForTimeout(5500);
+await B.waitForTimeout(20000);
 const second = JSON.parse(Object.values(gists)[0].content);
 check('기기 B에서 푼 문제가 자동으로 Gist에 저장됨', !!second.solved['py-004'] && !!second.solved['py-011']);
 
