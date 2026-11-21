@@ -58,12 +58,14 @@ const explain = e => {
   if (e.status === 401) return '토큰이 올바르지 않거나 만료됐어요. 새 토큰으로 다시 연결해 주세요.' + detail;
   if (e.status === 403 || e.status === 429) {
     const limited = /rate limit|abuse|too many|secondary/i.test(e.detail || '') || e.status === 429 || e.retryAfter > 0;
-    return (limited ? 'GitHub가 요청이 너무 잦다며 잠시 막았어요. 잠시 뒤 자동으로 다시 시도해요.' : 'GitHub가 요청을 막았어요. 토큰에 gist 권한이 있는지 확인해 주세요.') + detail;
+    return (limited ? `GitHub 요청 한도에 걸렸어요. ${hhmm(Math.max(pausedUntil, Date.now()))} 이후 자동으로 다시 시도해요. 기록은 이 기기에 계속 저장돼요.` : 'GitHub가 요청을 막았어요. 토큰에 gist 권한이 있는지 확인해 주세요.') + detail;
   }
   if (e.status === 404) return '저장된 Gist를 찾지 못했어요. 토큰에 gist 권한이 있는지 확인하고, 연결을 해제한 뒤 다시 연결해 보세요.' + detail;
   return '네트워크 오류예요. 인터넷 연결을 확인하세요.' + detail;
 };
-let pausedUntil = 0;   // 막혔을 때 이 시각까지는 자동으로 요청을 보내지 않는다
+// 막혔을 때 이 시각까지는 자동으로 요청을 보내지 않는다 (새로고침해도 유지)
+let pausedUntil = Number(readCfg().pausedUntil) || 0;
+const hhmm = t => new Date(t).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
 
 let running = null;
 // 원격 기록을 가져와 합치고, 내 쪽에 새 내용이 있으면 올린다
@@ -79,11 +81,15 @@ export function syncNow(manual = false) {
       let changed = false;
       if (remote) changed = store.mergeRemote(remote);
       if (!remote || store.hasNews(remote)) await writeGist(c.gistId);
-      writeCfg({ ...readCfg(), lastSync: Date.now() });
+      pausedUntil = 0;
+      writeCfg({ ...readCfg(), lastSync: Date.now(), pausedUntil: 0 });
       set('ok');
       if (changed) onRemote();
     } catch (e) {
-      if (e.status === 403 || e.status === 429) pausedUntil = Date.now() + Math.max(e.retryAfter || 0, 120000);   // 최소 2분은 쉰다
+      if (e.status === 403 || e.status === 429) {
+        pausedUntil = Date.now() + Math.max(e.retryAfter || 0, 120000);   // 최소 2분은 쉰다
+        writeCfg({ ...readCfg(), pausedUntil });
+      }
       set('error', explain(e));
     } finally { running = null; }
   })();

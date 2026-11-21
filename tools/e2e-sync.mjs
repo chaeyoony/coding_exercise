@@ -48,7 +48,7 @@ await A.fill('#synctoken', 'tok-limited');
 await A.click('#syncgo');
 await A.waitForFunction(() => /연결하지 못했어요/.test(document.getElementById('syncmsg')?.textContent || ''));
 const limitedMsg = await A.innerText('#syncmsg');
-check('요청 제한(403)이면 이유와 자동 재시도를 안내', limitedMsg.includes('너무 잦') && limitedMsg.includes('secondary rate limit'), limitedMsg);
+check('요청 제한(403)이면 이유와 자동 재시도를 안내', limitedMsg.includes('요청 한도') && limitedMsg.includes('secondary rate limit'), limitedMsg);
 await A.fill('#synctoken', 'tok-good');
 await A.click('#syncgo');
 await A.waitForSelector('#syncnow', { timeout: 15000 });
