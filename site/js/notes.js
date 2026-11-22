@@ -545,7 +545,7 @@ export const CATEGORY_NOTES = {
   // 파이썬
   '기초 문법': ['py-basics', 'r-basics'], '기초 출력·조건·반복': ['py-basics', 'py-flow', 'r-basics'], '문자열 다루기': S,
   '7강 리스트': ['py-containers'], '9강 튜플·집합': C, '9강 딕셔너리': C,
-  '10강 함수': ['py-func'], '10강 람다·변수 범위': ['py-lambda', 'py-func'], '중첩 리스트·컴프리헨션': ['py-comp', 'py-containers'], '예외 처리': ['py-err-lib'],
+  '10강 함수': ['py-func'], '10강 람다·변수 범위': ['py-lambda', 'py-func'], '중첩 리스트·컴프리헨션': ['py-comp', 'py-containers'], '예외 처리 ① try-except 기본': ['py-err-lib'], '예외 처리 ② 여러 오류·as e': ['py-err-lib'], '예외 처리 ③ else·finally·raise': ['py-err-lib'], '예외 처리 ④ 입력 검증·작은 프로젝트': ['py-err-lib'],
   '함수 만들기 ① 기본': ['py-func'], '함수 만들기 ② 조건·반복·리스트': ['py-func', 'py-flow'], '함수 만들기 ③ 함수 조합·고급 인수': ['py-func', 'py-lambda'], '함수 오류 고치기': ['py-func'],
   '이터레이터·제너레이터': ['py-iter-deco'], '데코레이터·클로저': ['py-iter-deco', 'py-lambda'], '예외 처리 심화': ['py-err-lib'], '모듈·표준 라이브러리': ['py-err-lib'], '파일 입출력': ['py-err-lib'], 'dataclass·타입 힌트': ['py-err-lib', 'py-class'],
   '프로젝트 ① 텍스트·데이터 처리': ['py-str', 'py-containers', 'py-comp'], '프로젝트 ② 게임·시뮬레이션': ['py-flow', 'py-containers'], '프로젝트 ③ 시스템 만들기': ['py-class', 'py-err-lib'],
@@ -559,7 +559,7 @@ export const CATEGORY_NOTES = {
   'DL ① 딥러닝 기본기': ['ds-dl', 'ds-numpy'], 'DL ② 대표 딥러닝 네트워크 (CNN·RNN·어텐션)': ['ds-dl', 'ds-numpy'], 'DL ③ TensorFlow 기초 (텐서·층·모델)': ['ds-dl-frameworks', 'ds-numpy', 'py-class'], 'DL ④ PyTorch 기초 (autograd·학습 루프)': ['ds-dl-frameworks', 'py-class', 'ds-dl'],
   // R
   '벡터·문자열': ['r-vector'], '함수·재귀': ['r-basics'], 'base R 데이터': ['r-df'], 'dplyr 기초': ['r-dplyr'], 'dplyr 집계·조인': ['r-dplyr'], 'tidyr·stringr·lubridate': ['r-dplyr'],
-  'R 출력·조건·반복': ['r-basics'], '오류 처리·환경': ['r-oop-err'], '함수형 도구': ['r-vector'], 'S3 클래스': ['r-oop-err'], 'R5 클래스': ['r-oop-err'],
+  'R 출력·조건·반복': ['r-basics'], 'R 클로저': ['r-oop-err'], 'R 오류 처리 ① tryCatch 기본': ['r-oop-err'], 'R 오류 처리 ② 경고·stop·finally': ['r-oop-err'], 'R 오류 처리 ③ 검증·작은 프로젝트': ['r-oop-err'], '함수형 도구': ['r-vector'], 'S3 클래스': ['r-oop-err'], 'R5 클래스': ['r-oop-err'],
   'R 프로젝트 ① 데이터 처리': ['r-vector', 'r-df'], 'R 프로젝트 ② 게임·시뮬레이션': ['r-basics', 'r-vector'], 'R 프로젝트 ③ 시스템 만들기': ['r-oop-err'],
   'R 통계 ① 데이터 준비': ['r-df', 'r-stats'], 'R 통계 ② 기술통계·신뢰구간': ['r-stats'], 'R 통계 ③ 두 집단 비교 (t-검정)': ['r-stats'], 'R 통계 ④ 세 집단 비교 (ANOVA)': ['r-stats'], 'R 통계 ⑤ 상관분석': ['r-stats'], 'R 통계 ⑥ 회귀분석': ['r-stats'],
 };

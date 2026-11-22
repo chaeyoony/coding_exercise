@@ -14,7 +14,10 @@ const out = (category, level, title, desc, solution, hint, cases, extra = {}) =>
   o({ category, level, title, desc, solution, hint, cases, track: 'r', ...extra });
 
 const B1 = 'R 출력·조건·반복';
-const E1 = '오류 처리·환경';
+const E1 = 'R 오류 처리 ① tryCatch 기본';
+const E2 = 'R 오류 처리 ② 경고·stop·finally';
+const E3 = 'R 오류 처리 ③ 검증·작은 프로젝트';
+const CL = 'R 클로저';
 const F1 = '함수형 도구';
 const S3 = 'S3 클래스';
 const R5 = 'R5 클래스';
@@ -67,32 +70,32 @@ export default [
     `safe_divide <- function(a, b) {\n  tryCatch({\n    if (b == 0) stop("zero")\n    a / b\n  }, error = function(e) NA)\n}\n`,
     '<p><code>tryCatch({ 시도할 코드 }, error = function(e) 대신 돌려줄 값)</code></p>',
     [t('safe_divide(10, 2)', 5), t('is.na(safe_divide(1, 0))', true), t('safe_divide(9, 3)', 3), t('safe_divide(-6, 3)', -2)]),
-  rr(E1, 2, '숫자로 바꾸기 (경고 잡기)', `<p><code>to_number(s)</code>를 만드세요. 문자열 <code>s</code>를 <code>as.numeric</code>으로 바꿔 돌려주되, 숫자가 아니라서 <b>경고(warning)</b>가 나면 <code>-1</code>을 돌려줘요. (<code>tryCatch(..., warning = function(w) ...)</code>)</p>`,
+  rr(E2, 2, '숫자로 바꾸기 (경고 잡기)', `<p><code>to_number(s)</code>를 만드세요. 문자열 <code>s</code>를 <code>as.numeric</code>으로 바꿔 돌려주되, 숫자가 아니라서 <b>경고(warning)</b>가 나면 <code>-1</code>을 돌려줘요. (<code>tryCatch(..., warning = function(w) ...)</code>)</p>`,
     `to_number <- function(s) {\n  \n}\n`,
     `to_number <- function(s) {\n  tryCatch(as.numeric(s), warning = function(w) -1)\n}\n`,
     '<p>숫자가 아닌 문자열을 <code>as.numeric</code>하면 R이 "NAs introduced by coercion" <b>경고</b>를 내요. <code>warning =</code> 처리기로 잡을 수 있어요.</p>',
     [t('to_number("3.5")', 3.5), t('to_number("abc")', -1), t('to_number("42")', 42), t('to_number("1e2")', 100)]),
-  rr(E1, 3, 'stop으로 입력 검사하기', `<p><code>check_age(age)</code>를 만드세요.</p><ul><li><code>age</code>가 숫자가 아니면 <code>stop("숫자가 아니에요")</code></li><li>음수이면 <code>stop("나이는 음수가 될 수 없어요")</code></li><li>그 외에는 <code>age</code>를 그대로 돌려줘요</li></ul>`,
+  rr(E2, 3, 'stop으로 입력 검사하기', `<p><code>check_age(age)</code>를 만드세요.</p><ul><li><code>age</code>가 숫자가 아니면 <code>stop("숫자가 아니에요")</code></li><li>음수이면 <code>stop("나이는 음수가 될 수 없어요")</code></li><li>그 외에는 <code>age</code>를 그대로 돌려줘요</li></ul>`,
     `check_age <- function(age) {\n  \n}\n`,
     `check_age <- function(age) {\n  if (!is.numeric(age)) stop("숫자가 아니에요")\n  if (age < 0) stop("나이는 음수가 될 수 없어요")\n  age\n}\n`,
     '<p>검사를 위에서 아래로: 숫자인지 → 음수인지. <code>stop("메시지")</code>가 오류를 일으켜요.</p>',
     [t('check_age(20)', 20), t('err_msg(function() check_age("a"))', '숫자가 아니에요'), t('err_msg(function() check_age(-1))', '나이는 음수가 될 수 없어요'), t('check_age(0)', 0)]),
-  rr(E1, 3, 'finally 와 후처리', `<p><code>run_task(x)</code>를 만드세요. <code>x</code>가 양수이면 <code>sqrt(x)</code>를 돌려주고, 아니면 오류를 일으켜요. 어느 쪽이든 <b>전역 변수 <code>log_count</code>를 1 올려야</b> 해요(<code>finally</code> 사용). 함수 밖에서 <code>log_count <- 0</code>으로 시작한다고 가정하고, 변경은 <code>&lt;&lt;-</code>를 써요.</p><p class="muted">채점 때 <code>log_count <- 0</code>이 먼저 실행돼요.</p>`,
+  rr(E2, 3, 'finally 와 후처리', `<p><code>run_task(x)</code>를 만드세요. <code>x</code>가 양수이면 <code>sqrt(x)</code>를 돌려주고, 아니면 오류를 일으켜요. 어느 쪽이든 <b>전역 변수 <code>log_count</code>를 1 올려야</b> 해요(<code>finally</code> 사용). 함수 밖에서 <code>log_count <- 0</code>으로 시작한다고 가정하고, 변경은 <code>&lt;&lt;-</code>를 써요.</p><p class="muted">채점 때 <code>log_count <- 0</code>이 먼저 실행돼요.</p>`,
     `log_count <- 0\nrun_task <- function(x) {\n  \n}\n`,
     `log_count <- 0\nrun_task <- function(x) {\n  tryCatch({\n    if (x <= 0) stop("not positive")\n    sqrt(x)\n  }, finally = {\n    log_count <<- log_count + 1\n  })\n}\n`,
     '<p><code>tryCatch(식, finally = { 항상 실행할 코드 })</code>. 함수 밖의 변수를 바꾸려면 <code>&lt;&lt;-</code>.</p>',
     [t('{ log_count <- 0; run_task(16) }', 4), t('{ log_count <- 0; run_task(9); run_task(4); log_count }', 2), t('{ log_count <- 0; try(run_task(-1), silent = TRUE); log_count }', 1), t('{ log_count <- 0; try(run_task(-1), silent = TRUE); run_task(1); log_count }', 2)]),
-  rr(E1, 3, '클로저: 카운터 만들기', `<p><code>make_counter()</code>를 만드세요. 호출하면 <b>함수 하나</b>를 돌려주고, 그 함수를 부를 때마다 1, 2, 3, … 을 차례로 돌려줘요. 카운터마다 <b>따로</b> 세요. (내부 변수는 <code>&lt;&lt;-</code>로 바꿔요)</p>`,
+  rr(CL, 3, '클로저: 카운터 만들기', `<p><code>make_counter()</code>를 만드세요. 호출하면 <b>함수 하나</b>를 돌려주고, 그 함수를 부를 때마다 1, 2, 3, … 을 차례로 돌려줘요. 카운터마다 <b>따로</b> 세요. (내부 변수는 <code>&lt;&lt;-</code>로 바꿔요)</p>`,
     `make_counter <- function() {\n  \n}\n`,
     `make_counter <- function() {\n  count <- 0\n  function() {\n    count <<- count + 1\n    count\n  }\n}\n`,
     '<p>함수 안에서 함수를 만들어 돌려주면, 안쪽 함수는 바깥 함수의 변수(<code>count</code>)를 기억해요. <code>&lt;&lt;-</code> 는 바깥 변수를 바꿔요.</p>',
     [t('{ k <- make_counter(); k(); k(); k() }', 3), t('{ a <- make_counter(); b <- make_counter(); a(); a(); b() }', 1), t('{ k <- make_counter(); k() }', 1), t('{ a <- make_counter(); a(); b <- make_counter(); c(a(), b()) }', [2, 1])]),
-  rr(E1, 3, '클로저: 곱하기 함수 공장', `<p><code>make_multiplier(n)</code>을 만드세요. 호출하면 "받은 수에 <code>n</code>을 곱해 주는 함수"를 돌려줘요. 예: <code>double <- make_multiplier(2); double(5)</code> → 10</p>`,
+  rr(CL, 3, '클로저: 곱하기 함수 공장', `<p><code>make_multiplier(n)</code>을 만드세요. 호출하면 "받은 수에 <code>n</code>을 곱해 주는 함수"를 돌려줘요. 예: <code>double <- make_multiplier(2); double(5)</code> → 10</p>`,
     `make_multiplier <- function(n) {\n  \n}\n`,
     `make_multiplier <- function(n) {\n  function(x) x * n\n}\n`,
     '<p>함수 안에서 <code>function(x) ...</code>를 그대로 돌려주면 돼요.</p>',
     [t('make_multiplier(2)(5)', 10), t('make_multiplier(10)(0.5)', 5), t('{ f <- make_multiplier(3); f(f(2)) }', 18), t('make_multiplier(0)(99)', 0)]),
-  rr(E1, 4, '재시도하는 함수', `<p><code>retry(f, times)</code>를 만드세요. 인수 없는 함수 <code>f</code>를 불러서 성공하면 그 값을 돌려주고, <b>오류가 나면 최대 <code>times</code>번까지 다시 시도</b>해요. 끝까지 실패하면 <code>"failed"</code>를 돌려줘요.</p>`,
+  rr(E3, 4, '재시도하는 함수', `<p><code>retry(f, times)</code>를 만드세요. 인수 없는 함수 <code>f</code>를 불러서 성공하면 그 값을 돌려주고, <b>오류가 나면 최대 <code>times</code>번까지 다시 시도</b>해요. 끝까지 실패하면 <code>"failed"</code>를 돌려줘요.</p>`,
     `retry <- function(f, times) {\n  \n}\n`,
     `retry <- function(f, times) {\n  for (i in seq_len(times)) {\n    result <- tryCatch(f(), error = function(e) NULL)\n    if (!is.null(result)) return(result)\n  }\n  "failed"\n}\n`,
     '<p>반복하면서 <code>tryCatch(f(), error = function(e) NULL)</code>을 시도하고, <code>NULL</code>이 아니면 바로 <code>return</code>.</p>',

@@ -28,6 +28,8 @@ import pyquiz from './pyquiz.mjs';
 import pyquiz2 from './pyquiz2.mjs';
 import pywb from './pywb.mjs';
 import pywbquiz from './pywbquiz.mjs';
+import pyerr from './pyerr.mjs';
+import rerr from './rerr.mjs';
 import r from './r.mjs';
 import r2 from './r2.mjs';
 import r3 from './r3.mjs';
@@ -39,7 +41,7 @@ const numbered = (list, prefix, start) => list.map((x, i) => ({ ...x, id: `${pre
 export default [
   ...sql, ...sql2, ...sql3,
   ...python, ...python2, ...numbered([...python3, ...python4], 'py', 24),
-  ...numbered([...pycourse1, ...pycourse2, ...pycourse3, ...pybasic, ...pyfunc, ...pyfunc2, ...pyclass, ...pylater, ...pyproject, ...pyclass11, ...pyclass11b, ...pylambda, ...pyquiz, ...pyquiz2, ...pywb, ...pywbquiz], 'py', 128),
+  ...numbered([...pycourse1, ...pycourse2, ...pycourse3, ...pybasic, ...pyfunc, ...pyfunc2, ...pyclass, ...pylater, ...pyproject, ...pyclass11, ...pyclass11b, ...pylambda, ...pyquiz, ...pyquiz2, ...pywb, ...pywbquiz, ...pyerr], 'py', 128),
   ...ds, ...ds2, ...numbered(ds3, 'ds', 401), ...numbered(dsml, 'ds', 501), ...numbered(dsdl, 'ds', 601),
-  ...r, ...r2, ...numbered([...r3, ...r4], 'r', 301), ...numbered(rmore, 'r', 501), ...numbered(rstats, 'r', 601),
+  ...r, ...r2, ...numbered([...r3, ...r4], 'r', 301), ...numbered(rmore, 'r', 501), ...numbered(rstats, 'r', 601), ...numbered(rerr, 'r', 701),
 ];

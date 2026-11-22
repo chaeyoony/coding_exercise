@@ -4,7 +4,9 @@ import { o } from './_stdout.mjs';
 const OUT = '기초 출력·조건·반복';
 const STR = '문자열 다루기';
 const NEST = '중첩 리스트·컴프리헨션';
-const EXC = '예외 처리';
+const EXC = '예외 처리 ① try-except 기본';
+const EXC2 = '예외 처리 ② 여러 오류·as e';
+const EXC3 = '예외 처리 ③ else·finally·raise';
 
 export default [
   // ================= 기초 출력 · 조건 · 반복 =================
@@ -374,7 +376,7 @@ export default [
     needs: [['try\\s*:', 'try / except를 사용해야 해요']],
   }),
   o({
-    category: EXC, level: 2, title: '없는 키를 읽을 때 (KeyError)',
+    category: EXC2, level: 2, title: '없는 키를 읽을 때 (KeyError)',
     desc: `<p>딕셔너리 <code>prices</code>(상품 → 가격)와 상품 이름 리스트 <code>wanted</code>가 주어져요. <code>wanted</code>의 각 상품 가격을 <code>prices[이름]</code>으로 읽어 <b>합계</b>를 구하되, 딕셔너리에 없는 상품이면 <code>KeyError</code>를 <code>try / except</code>로 잡아 <b>건너뛰세요</b>. 합계를 출력하세요.</p>`,
     solution: `total = 0\nfor w in wanted:\n    try:\n        total += prices[w]\n    except KeyError:\n        pass\nprint(total)\n`,
     hint: '<p><code>pass</code>는 "아무것도 하지 않음"이에요. <code>except</code> 아래를 비워 둘 수 없으니 써요.</p>',
@@ -382,7 +384,7 @@ export default [
     needs: [['try\\s*:', 'try / except를 사용해야 해요']],
   }),
   o({
-    category: EXC, level: 2, title: 'else와 finally',
+    category: EXC3, level: 2, title: 'else와 finally',
     desc: `<p>문자열 <code>s</code>가 주어져요. 아래처럼 동작하는 코드를 쓰세요.</p>
 <ul><li><code>try</code>: <code>int(s)</code>로 정수로 바꿈</li><li><code>except ValueError</code>: <code>숫자가 아니에요</code> 출력</li><li><code>else</code> (오류가 <b>없을 때만</b>): <code>변환 성공: 값</code> 출력 (값은 정수)</li><li><code>finally</code> (<b>항상</b>): <code>끝</code> 출력</li></ul>`,
     solution: `try:\n    n = int(s)\nexcept ValueError:\n    print("숫자가 아니에요")\nelse:\n    print("변환 성공:", n)\nfinally:\n    print("끝")\n`,
@@ -391,7 +393,7 @@ export default [
     needs: [['else\\s*:', 'else를 사용해 보세요'], ['finally\\s*:', 'finally를 사용해 보세요']],
   }),
   o({
-    category: EXC, level: 3, title: '직접 오류 일으키기 (raise)',
+    category: EXC3, level: 3, title: '직접 오류 일으키기 (raise)',
     desc: `<p>나이 <code>age</code>(정수)가 주어져요. <code>age</code>가 <b>0보다 작으면</b> <code>raise ValueError("나이는 음수가 될 수 없어요")</code> 로 오류를 일으키고, 이 오류를 <code>try / except ValueError as e</code>로 잡아서 <b>오류 메시지(<code>e</code>)</b>를 출력하세요. 오류가 없으면 <code>나이: 값</code>을 출력하세요.</p>`,
     solution: `try:\n    if age < 0:\n        raise ValueError("나이는 음수가 될 수 없어요")\n    print("나이:", age)\nexcept ValueError as e:\n    print(e)\n`,
     hint: '<p><code>raise</code>로 오류를 직접 일으킬 수 있고, <code>except ... as e</code> 의 <code>e</code>를 출력하면 메시지가 나와요.</p>',
