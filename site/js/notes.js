@@ -1,7 +1,8 @@
 // 기초 노트: 문제를 풀다가 막힐 때 펼쳐 보는 코드 정리. 문제 화면에서 단원(카테고리)에 맞는 노트로 연결된다.
+import { REF_NOTES } from './notes_ref.js';
 const n = (id, track, title, html) => ({ id, track, title, html });
 
-export const NOTES = [
+const BASE_NOTES = [
   // ================= 파이썬 =================
   n('py-basics', 'python', '변수·자료형·입출력', `
 <h3>변수와 자료형</h3>
@@ -531,6 +532,7 @@ FROM employees;</pre>
 
 // 단원(카테고리) → 참고 노트
 const P = ['py-basics'], S = ['py-str'], C = ['py-containers'];
+export const NOTES = [...BASE_NOTES, ...REF_NOTES];
 export const CATEGORY_NOTES = {
   // SQL
   '기초 조회': ['sql-basics'], '집계': ['sql-basics', 'sql-join-agg'], '조인': ['sql-join-agg'],
@@ -563,6 +565,23 @@ export const CATEGORY_NOTES = {
   'R 프로젝트 ① 데이터 처리': ['r-vector', 'r-df'], 'R 프로젝트 ② 게임·시뮬레이션': ['r-basics', 'r-vector'], 'R 프로젝트 ③ 시스템 만들기': ['r-oop-err'],
   'R 통계 ① 데이터 준비': ['r-df', 'r-stats'], 'R 통계 ② 기술통계·신뢰구간': ['r-stats'], 'R 통계 ③ 두 집단 비교 (t-검정)': ['r-stats'], 'R 통계 ④ 세 집단 비교 (ANOVA)': ['r-stats'], 'R 통계 ⑤ 상관분석': ['r-stats'], 'R 통계 ⑥ 회귀분석': ['r-stats'],
 };
+
+// "[사전]" 노트를 단원에 연결한다 (정규식에 맞는 카테고리 뒤에 붙임)
+const REF_LINKS = [
+  ['py-ref-builtin', /^(워크북|중간고사|심화 퀴즈 [①②③])|^(기초 문법|기초 출력·조건·반복|문자열 다루기|7강|9강|딕셔너리|문자열·리스트|중첩 리스트|함수 만들기|알고리즘|재귀·자료구조|프로젝트 [①②])/],
+  ['py-ref-lib', /^(모듈·표준|이터레이터|데코레이터|파일 입출력|알고리즘|재귀·자료구조|프로젝트|람다 [②③④]|9강 딕셔너리|딕셔너리|7강 리스트)/],
+  ['py-ref-oop', /^(클래스 |11강|dataclass|예외 처리 심화|함수·클래스|프로젝트 ③|심화 퀴즈 ⑤)/],
+  ['ds-ref-numpy', /^(ML |DL |통계|머신러닝|딥러닝)/],
+  ['ds-ref-pandas', /^(데이터 분석|데이터 정제)/],
+  ['ds-ref-sklearn', /^(ML |머신러닝)/],
+  ['r-ref-base', /^(기초 문법|R 출력·조건·반복|벡터·문자열|함수·재귀|함수형 도구|R 클로저|R 오류 처리|알고리즘|base R 데이터|R 프로젝트)/],
+  ['r-ref-tidy', /^(dplyr|tidyr|R 프로젝트 ①|base R 데이터)/],
+  ['r-ref-stat', /^(R 통계|S3|R5|R 클로저)/],
+  ['sql-ref', /^(기초 조회|집계|조인|서브쿼리·응용|윈도우 함수)$/],
+];
+for (const [id, re] of REF_LINKS) {
+  for (const cat of Object.keys(CATEGORY_NOTES)) if (re.test(cat) && !CATEGORY_NOTES[cat].includes(id)) CATEGORY_NOTES[cat] = [...CATEGORY_NOTES[cat], id];
+}
 
 // 같은 이름의 카테고리가 파이썬과 R에 모두 있는 경우(기초 문법 등)를 위해 트랙에 맞는 노트만 고른다
 export function notesFor(problem) {
