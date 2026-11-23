@@ -129,6 +129,14 @@ check('문제 화면에 코딩 문제 진행률(%)이 보임', /코딩 문제 �
 await page.goto(base + 'p/py-581');
 await page.waitForSelector('#pprog');
 check('퀴즈 화면에는 퀴즈 진행률(%)이 보임', /퀴즈 진행률 \d+%/.test(await page.innerText('#pprog')));
+page.once('dialog', d => d.accept('10'));
+await page.click('#pprog [data-goal]');
+await page.waitForTimeout(300);
+check('오늘 목표(%)를 설정하면 목표·남은 문제가 보임', /오늘 목표 10%/.test(await page.innerText('#pprog')) && /목표까지 \d+문제|목표 달성/.test(await page.innerText('#pprog')), await page.innerText('#pprog'));
+page.once('dialog', d => d.accept('0'));
+await page.click('#pprog [data-goal]');
+await page.waitForTimeout(300);
+check('목표를 0으로 하면 꺼짐', !/오늘 목표 \d+%/.test(await page.innerText('#pprog')));
 // OX·객관식 퀴즈: 오답 → 정답, 직접 실행해 보기, 힌트
 {
   const qz = JSON.parse(fs.readFileSync('site/problems/py-581.json', 'utf8'));

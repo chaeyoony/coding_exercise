@@ -53,6 +53,7 @@ function hasNews(d) {
 
 export const store = {
   isSolved: id => !!mem.solved[id],
+  solvedAt: id => mem.solved[id] || 0,
   markSolved(id) { if (mem.solved[id]) return; mem.solved[id] = Date.now(); save(); },
   getLast: track => mem.last[track],
   setLast(track, id) { if (mem.last[track] === id) return; mem.last[track] = id; mem.lastAt[track] = Date.now(); save(); },
