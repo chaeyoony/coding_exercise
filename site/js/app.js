@@ -53,17 +53,17 @@ function progHtml(p) {
   const tp = pct(done, list.length);
   const label = kinds.length < 2 ? '전체' : (k === 'quiz' ? '퀴즈' : '코딩 문제');
   progP = p;
-  // 오늘 목표(선택): 이 종류 전체 문제 수의 몇 %를 오늘 풀지. 목표 대비 오늘 푼 문제와 남은 문제를 보여 준다
+  // 오늘 목표(선택): "전체 진행률을 몇 %까지 올릴지". 예) 지금 20%이고 목표가 25%면 5%p(문제 몇 개)가 남은 것
   const goal = Number(store.getPref(goalKey(p), 0)) || 0;
   let goalHtml = '';
   if (goal > 0 && list.length) {
-    const target = Math.max(1, Math.ceil(goal * list.length / 100));
+    const target = Math.min(list.length, Math.ceil(goal * list.length / 100));
     const t0 = new Date(); t0.setHours(0, 0, 0, 0);
     const today = list.filter(x => store.isSolved(x.id) && store.solvedAt(x.id) >= t0.getTime()).length;
-    const left = Math.max(0, target - today);
-    const gp = Math.min(100, Math.round(100 * today / target));
-    goalHtml = `<div class="pprog-row goal"><span><b>🎯 오늘 목표 ${goal}%</b> <span class="muted">(${target}문제)</span> · 오늘 <b>${today}</b>문제 풀었어요</span>
-      <span class="${left ? 'muted' : 'goal-done'}">${left ? `목표까지 ${left}문제 (${(100 * left / list.length).toFixed(1)}%p) 남음` : '🎉 오늘 목표 달성!'}</span></div>
+    const left = Math.max(0, target - done);
+    const gp = Math.min(100, Math.round(100 * done / target));
+    goalHtml = `<div class="pprog-row goal"><span><b>🎯 오늘 목표 ${goal}%까지</b> <span class="muted">(${target}문제) · 지금 ${(100 * done / list.length).toFixed(1)}% · 오늘 ${today}문제 풀었어요</span></span>
+      <span class="${left ? 'muted' : 'goal-done'}">${left ? `목표까지 ${left}문제 (${Math.max(0, goal - 100 * done / list.length).toFixed(1)}%p) 남음` : '🎉 목표 달성! 새 목표를 정해 보세요'}</span></div>
       <div class="bar goalbar"><i style="width:${gp}%"></i></div>`;
   }
   return `<div class="pprog-row"><span><b>${label} 진행률 ${tp}%</b> <span class="muted">(${done} / ${list.length} 문제)</span></span>
@@ -76,7 +76,7 @@ document.addEventListener('click', e => {
   const b = e.target.closest && e.target.closest('[data-goal]');
   if (!b || !progP) return;
   const cur = Number(store.getPref(goalKey(progP), 0)) || 0;
-  const v = prompt('오늘 풀 목표를 전체 문제의 몇 %로 할까요? (예: 2)\n비우거나 0을 입력하면 목표를 끕니다.', cur || '');
+  const v = prompt('오늘 목표: 진행률을 몇 %까지 올릴까요? (예: 지금 20%이고 25를 넣으면 5%p가 목표)\n비우거나 0을 입력하면 목표를 끕니다.', cur || '');
   if (v === null) return;
   const n = Math.max(0, Math.min(100, Number(String(v).replace('%', '').trim()) || 0));
   store.setPref(goalKey(progP), n);
