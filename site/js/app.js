@@ -54,8 +54,13 @@ function progHtml(p) {
   const label = kinds.length < 2 ? '전체' : (k === 'quiz' ? '퀴즈' : '코딩 문제');
   progP = p;
   // 오늘 목표(선택): "전체 진행률을 몇 %까지 올릴지". 예) 지금 20%이고 목표가 25%면 5%p(문제 몇 개)가 남은 것
-  const goal = Number(store.getPref(goalKey(p), 0)) || 0;
+  const g = readGoal(p);                    // { pct, day } — 날짜가 오늘이 아니면 만료
+  const goal = g.today ? g.pct : 0;
+  const exact = list.length ? 100 * done / list.length : 0;
   let goalHtml = '';
+  if (!goal && list.length) {
+    goalHtml = `<div class="pprog-row goal goal-off"><span>🎯 오늘 목표를 아직 안 정했어요${g.pct ? ` <span class="muted">(지난 목표 ${g.pct}%)</span>` : ''}</span></div>`;
+  }
   if (goal > 0 && list.length) {
     const target = Math.min(list.length, Math.ceil(goal * list.length / 100));
     const t0 = new Date(); t0.setHours(0, 0, 0, 0);
@@ -72,14 +77,23 @@ function progHtml(p) {
 }
 let progP = null;
 const goalKey = p => `goal:${p.track}:${kindOf(p)}`;
+const dayStr = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+// 저장 형식 "25@2026-11-23" (목표 %@날짜). 날짜가 오늘이 아니면 목표는 꺼진 것으로 본다
+function readGoal(p) {
+  const [pct, day] = String(store.getPref(goalKey(p), '')).split('@');
+  return { pct: Number(pct) || 0, today: day === dayStr() };
+}
 document.addEventListener('click', e => {
   const b = e.target.closest && e.target.closest('[data-goal]');
   if (!b || !progP) return;
-  const cur = Number(store.getPref(goalKey(progP), 0)) || 0;
+  const g0 = readGoal(progP);
+  const list0 = INDEX.filter(x => x.track === progP.track && kindOf(x) === kindOf(progP));
+  const now0 = list0.length ? list0.filter(x => store.isSolved(x.id)).length * 100 / list0.length : 0;
+  const cur = g0.today ? g0.pct : Math.min(100, Math.ceil(now0) + 5);   // 새 날에는 "지금 +5%p"를 기본값으로 제안
   const v = prompt('오늘 목표: 진행률을 몇 %까지 올릴까요? (예: 지금 20%이고 25를 넣으면 5%p가 목표)\n비우거나 0을 입력하면 목표를 끕니다.', cur || '');
   if (v === null) return;
   const n = Math.max(0, Math.min(100, Number(String(v).replace('%', '').trim()) || 0));
-  store.setPref(goalKey(progP), n);
+  store.setPref(goalKey(progP), n ? `${n}@${dayStr()}` : '');
   const pg = document.getElementById('pprog'); if (pg) pg.innerHTML = progHtml(progP);
 });
 

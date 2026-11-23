@@ -137,6 +137,10 @@ page.once('dialog', d => d.accept('0'));
 await page.click('#pprog [data-goal]');
 await page.waitForTimeout(300);
 check('목표를 0으로 하면 꺼짐', !/오늘 목표 \d+%/.test(await page.innerText('#pprog')));
+await page.evaluate(() => { const k = 'practice-platform:v1'; const m = JSON.parse(localStorage.getItem(k)); const kk = Object.keys(m.prefs || {}).find(x => x.startsWith('goal:')) || 'goal:python:code'; m.prefs = m.prefs || {}; m.prefsAt = m.prefsAt || {}; m.prefs[kk] = '25@2000-01-01'; m.prefsAt[kk] = Date.now() + 1000; localStorage.setItem(k, JSON.stringify(m)); });
+await page.reload(); await page.waitForSelector('#pprog');
+const stale = await page.innerText('#pprog');
+check('어제 이전에 정한 목표는 만료되어 "아직 안 정했어요"로 보임', /아직 안 정했어요/.test(stale) && !/목표까지|목표 달성/.test(stale), stale);
 // OX·객관식 퀴즈: 오답 → 정답, 직접 실행해 보기, 힌트
 {
   const qz = JSON.parse(fs.readFileSync('site/problems/py-581.json', 'utf8'));
