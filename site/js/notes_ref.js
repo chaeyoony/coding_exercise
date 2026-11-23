@@ -124,6 +124,22 @@ re.sub(r"\\s+", " ", "a   b  c")      # 'a b c'   (바꾸기)
 re.search(r"(\\d+)-(\\d+)", "tel 02-123").groups()   # ('02', '123')  (처음 찾은 것)
 re.match(r"[a-z]+", "abc123")         # 문자열 "맨 앞"에서만 찾음
 pat = re.compile(r"\\d{3}"); pat.findall("1234567")   # 미리 컴파일해 재사용</pre>
+<h3>statistics · string · operator · enum · calendar</h3>
+<pre class="out">import statistics, string, calendar
+statistics.mean([1, 2, 4]); statistics.median([1, 3, 2]); statistics.stdev([1, 2, 3])   # 평균·중앙값·표본표준편차
+statistics.mode([1, 2, 2, 3]); statistics.pstdev([1, 2, 3])                            # 최빈값·모표준편차
+string.ascii_lowercase; string.ascii_uppercase; string.digits; string.punctuation   # 문자 모음 상수
+calendar.isleap(2024); calendar.monthrange(2024, 2)   # True (3, 29): (1일의 요일 번호 0=월…, 그 달의 일수)
+
+from operator import itemgetter, attrgetter
+sorted([("a", 3), ("b", 1)], key=itemgetter(1))    # 두 번째 값으로 정렬 (lambda x: x[1] 과 같음)
+sorted(people, key=attrgetter("age"))              # 객체의 속성으로 정렬
+
+from enum import Enum
+class Color(Enum):                  # 이름 붙은 상수 모음
+    RED = 1
+    BLUE = 2
+Color.RED.name; Color.RED.value; Color(2)   # 'RED' 1 Color.BLUE</pre>
 <h3>json · csv · sys · time</h3>
 <pre class="out">import json, csv, sys, time
 s = json.dumps({"a": [1, 2]}, ensure_ascii=False)   # 파이썬 → JSON 문자열
@@ -133,6 +149,85 @@ with open("a.csv", newline="", encoding="utf-8") as f:
     # csv.DictReader(f) 는 헤더를 키로 쓰는 딕셔너리로
 sys.argv                               # 명령줄 인수 목록
 time.sleep(0.5); time.time()           # 쉬기 / 현재 시각(초)</pre>`),
+
+  n('py-ref-error', 'python', '[사전] 예외 종류·오류 읽기·as e·type(e).__name__', `
+<h3>오류 객체 다루기: as e</h3>
+<pre class="out">try:
+    int("abc")
+except ValueError as e:        # 잡은 오류를 변수 e 로 받음
+    print(type(e).__name__)    # 'ValueError'      오류의 "이름(종류)"
+    print(str(e))              # "invalid literal for int() with base 10: 'abc'"   오류 메시지
+    print(e.args)              # ("invalid literal ...",)   raise 할 때 넣은 값들의 튜플
+    print(repr(e))             # ValueError("invalid literal ...")  (이름까지 포함한 표현)
+
+try:
+    {}["k"]
+except Exception as e:         # 모든 일반 오류의 부모 → 종류를 가리지 않고 잡음
+    print(type(e).__name__, e) # KeyError 'k'</pre>
+<h3>자주 만나는 오류와 원인</h3>
+<pre class="out">ZeroDivisionError   1 / 0, 5 % 0
+ValueError          int("abc"), float("x") — 타입은 맞는데 "값"이 이상함
+TypeError           1 + "a", len(5), None + 1 — "타입"이 맞지 않음
+IndexError          [1, 2][5] — 리스트 번호 범위 밖
+KeyError            {}["k"] — 없는 딕셔너리 키
+AttributeError      None.upper() — 그런 속성/메서드가 없음
+NameError           정의하지 않은 변수 이름을 씀
+UnboundLocalError   함수 안에서 바깥 변수를 바꾸려다 "지역 변수"로 취급됨 (→ global / nonlocal)
+FileNotFoundError   없는 파일을 open
+StopIteration       next() 로 더 줄 게 없을 때 (반복의 끝 신호)
+RuntimeError        그 밖의 실행 중 문제 (직접 raise 할 때도 씀)
+NotImplementedError "자식 클래스가 구현해야 해요"라는 표시로 직접 일으킴
+RecursionError      재귀가 너무 깊음
+AssertionError      assert 조건이 거짓
+SyntaxError / IndentationError   문법·들여쓰기가 틀림 (실행 전에 나는 오류라 try 로 잡을 수 없어요)</pre>
+<h3>오류의 가족 관계 (아래가 자식)</h3>
+<pre class="out">BaseException
+ └ Exception
+    ├ ArithmeticError ─ ZeroDivisionError
+    ├ LookupError ─ IndexError, KeyError
+    ├ ValueError
+    ├ TypeError
+    ├ OSError ─ FileNotFoundError
+    └ RuntimeError ─ NotImplementedError, RecursionError
+# except 부모클래스 는 자식 오류도 함께 잡아요: except LookupError 는 IndexError 와 KeyError 모두</pre>
+<h3>raise 의 여러 모양</h3>
+<pre class="out">raise ValueError("메시지")        # 새로 일으키기
+raise ValueError                  # 클래스만 써도 됨 (메시지 없음)
+try: ...
+except ValueError:
+    print("로그 남기기")
+    raise                         # 인수 없이 raise → 잡은 오류를 "그대로 다시" 던짐
+try: int("x")
+except ValueError as e:
+    raise RuntimeError("설정 읽기 실패") from e   # 원인(e)을 이어 붙여 새 오류로 바꿈
+def todo(): raise NotImplementedError("아직 안 만들었어요")</pre>
+<h3>finally · else · 우선순위</h3>
+<pre class="out">def f():
+    try:
+        return "try"
+    finally:
+        print("항상 실행")     # return 하기 직전에 실행됨
+# except 는 위에서부터 처음 맞는 것 하나만 실행 → 구체적인 오류를 먼저, Exception 은 맨 뒤에
+try: ...
+except (KeyError, IndexError) as e: ...   # 튜플로 묶어 한 번에
+except Exception as e: ...</pre>
+<h3>with 와 오류 · 오류 위치 보기</h3>
+<pre class="out">with open("a.txt") as f:     # 오류가 나도 파일이 자동으로 닫힘
+    data = f.read()
+import traceback
+try: 1 / 0
+except ZeroDivisionError:
+    print(traceback.format_exc())   # "어느 줄에서 났는지"까지 문자열로
+import warnings
+warnings.warn("곧 사라질 기능이에요")   # 프로그램을 멈추지 않는 경고</pre>
+<h3>dataclass 와 불변 객체의 오류</h3>
+<pre class="out">from dataclasses import dataclass, FrozenInstanceError
+@dataclass(frozen=True)          # 만든 뒤에는 값을 바꿀 수 없음
+class P:
+    x: int
+p = P(1)
+try: p.x = 2
+except FrozenInstanceError: print("바꿀 수 없어요")</pre>`),
 
   n('py-ref-oop', 'python', '[사전] 클래스 보충: 특수 메서드·데코레이터·dataclass·assert', `
 <h3>특수(매직) 메서드</h3>
@@ -147,6 +242,23 @@ time.sleep(0.5); time.time()           # 쉬기 / 현재 시각(초)</pre>`),
     def __getitem__(self, i): return (self.x, self.y)[i]           # a[0]
     def __iter__(self): return iter((self.x, self.y))              # for v in a
     def __call__(self, k): return Vec(self.x * k, self.y * k)      # a(3) 처럼 함수처럼 호출</pre>
+<h3>연산자 특수 메서드 더 보기</h3>
+<pre class="out">class V:
+    def __init__(self, x): self.x = x
+    def __sub__(self, o): return V(self.x - o.x)      # a - b
+    def __mul__(self, o): return V(self.x * (o.x if isinstance(o, V) else o))   # a * b  (b 가 숫자여도 되게)
+    def __rmul__(self, o): return self * o            # 3 * a  ("오른쪽 피연산자" 버전: 왼쪽이 숫자라 int.__mul__ 이 실패했을 때 호출)
+    def __radd__(self, o): return V(self.x + o)       # 3 + a  /  sum([a, b]) 가 0 + a 로 시작하므로 필요
+    def __pow__(self, k): return V(self.x ** k)       # a ** 2
+    def __neg__(self): return V(-self.x)              # -a
+    def __contains__(self, v): return v == self.x     # v in a
+# 이름 앞에 r 이 붙은 메서드(__radd__ 등)는 "오른쪽에 있는 객체"가 처리하는 버전
+# 자동 미분(autograd) 같은 계산 그래프 클래스를 만들 때 이 연산자들을 한꺼번에 정의해요
+
+class Cell:
+    pass
+Cell.__name__       # 'Cell'   클래스 이름 문자열. 오류에는 type(e).__name__ 으로 사용
+# if __name__ == "__main__":  → "이 파일을 직접 실행했을 때만" 아래 코드 실행</pre>
 <h3>반복자 규약과 with 규약</h3>
 <pre class="out">class Count:                       # for 문에서 쓸 수 있는 반복자
     def __init__(self, n): self.i, self.n = 0, n
@@ -178,6 +290,15 @@ class Timer:                       # with 문에서 쓸 수 있는 객체
     def r(self, v):
         if v &lt;= 0: raise ValueError("양수만")
         self._r = v                     # c.r = 5 로 대입할 때 검증</pre>
+<h3>dataclass의 __post_init__</h3>
+<pre class="out">from dataclasses import dataclass
+@dataclass
+class Rect:
+    w: int
+    h: int
+    def __post_init__(self):          # __init__ 이 값을 채운 "직후" 자동으로 불림 → 검증·파생 값 계산
+        if self.w &lt;= 0 or self.h &lt;= 0: raise ValueError("양수만")
+        self.area = self.w * self.h</pre>
 <h3>dataclass의 field · 상속 확인</h3>
 <pre class="out">from dataclasses import dataclass, field
 @dataclass
@@ -308,6 +429,12 @@ MinMaxScaler().fit_transform(X)       # 0~1 범위로</pre>
 knn = KNeighborsClassifier(n_neighbors=3).fit(X_tr, y_tr)   # 가까운 3개의 다수결
 pred = knn.predict(X_te)
 proba = knn.predict_proba(X_te)       # 클래스별 확률 (각 행의 합 = 1)</pre>
+<h3>그 밖의 모델 (같은 fit / predict 모양)</h3>
+<pre class="out">from sklearn.svm import SVC
+from sklearn.linear_model import Ridge, Lasso
+SVC(kernel="rbf", C=1.0).fit(X_tr, y_tr)   # 서포트 벡터 머신: 두 클래스 사이의 "여백(margin)"이 가장 넓은 경계
+Ridge(alpha=1.0).fit(X_tr, y_tr)           # 회귀 + L2 규제 (계수를 작게 눌러 과적합을 줄임)
+Lasso(alpha=0.1).fit(X_tr, y_tr)           # 회귀 + L1 규제 (쓸모없는 계수를 0으로 만듦)</pre>
 <h3>분류 평가 지표</h3>
 <pre class="out">from sklearn.metrics import accuracy_score, confusion_matrix, precision_score, recall_score, f1_score
 accuracy_score(y_te, pred)            # 맞춘 비율
@@ -369,6 +496,27 @@ Negate(is.na)                           # 조건을 뒤집은 함수
 switch("b", a = "A", b = "B", "기타")    # "B" (마지막은 기본값)
 seq_along(c("a", "b")); seq_len(0)      # 1 2 / integer(0)  (빈 경우에도 안전한 반복용)
 repeat { i <- i + 1; if (i &gt; 3) break }  # 무한 반복 + break</pre>
+<h3>문자열·변환 보충</h3>
+<pre class="out">strrep("ab", 3)                    # "ababab"  (문자열 반복)
+formatC(3.14159, digits = 2, format = "f")   # "3.14"
+formatC(7, width = 3, flag = "0")  # "007"
+chartr("abc", "xyz", "aabbcc")     # "xxyyzz"  (글자 하나씩 바꾸기: a→x, b→y, c→z)
+weekdays(as.Date("2024-03-01"))    # "금요일"  (사용 환경의 언어로 나와요)
+as.list(1:3); as.vector(m)         # 벡터→리스트 / 행렬→벡터
+as.data.frame(m)                   # 행렬 → 데이터프레임
+rownames(df); rownames(df) &lt;- c("a", "b")   # 행 이름 읽기/바꾸기
+is.list(x); is.factor(x); is.logical(x)    # 타입 검사
+nlevels(factor(c("a", "b", "a")))  # 2  (범주 개수)
+capture.output(print(1:3))         # 출력된 글자를 문자열로 붙잡기
+suppressWarnings(as.numeric("a"))  # 경고 메시지를 안 보이게 (NA 는 그대로)
+ave(c(1, 2, 3, 4), c("a", "a", "b", "b"))   # 1.5 1.5 3.5 3.5  (그룹 평균을 원래 길이로 붙임)
+Find(function(v) v &gt; 2, 1:5)       # 3 (조건에 맞는 첫 원소)</pre>
+<h3>S3 메서드 이름 규칙</h3>
+<pre class="out">speak &lt;- function(x, ...) UseMethod("speak")     # 일반 함수
+speak.cat &lt;- function(x, ...) cat("야옹\n")      # "일반함수.클래스" 이름이 메서드
+speak.default &lt;- function(x, ...) cat("...\n")   # 맞는 클래스가 없을 때
+print.person &lt;- function(x, ...) cat("사람:", x$name, "\n")   # print(obj) 가 자동으로 이걸 부름
+class(obj) &lt;- c("student", "person")             # 앞에 있는 클래스부터 찾음(상속)</pre>
 <h3>행렬·데이터프레임 보충</h3>
 <pre class="out">m <- matrix(1:6, nrow = 2)
 dim(m); nrow(m); ncol(m); t(m)          # 모양 / 행 수 / 열 수 / 전치

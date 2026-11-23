@@ -201,6 +201,8 @@ except ValueError as e:      # 특정 오류만
     x = 0
 except (KeyError, IndexError):
     ...
+except Exception as e:       # 그 밖의 모든 오류. e 에 오류 객체가 들어 있어요
+    print(type(e).__name__, e)   # 오류 이름(예: ValueError)과 메시지
 else:
     ...                      # 오류 없을 때
 finally:
@@ -570,6 +572,7 @@ export const CATEGORY_NOTES = {
 const REF_LINKS = [
   ['py-ref-builtin', /^(워크북|중간고사|심화 퀴즈 [①②③])|^(기초 문법|기초 출력·조건·반복|문자열 다루기|7강|9강|딕셔너리|문자열·리스트|중첩 리스트|함수 만들기|알고리즘|재귀·자료구조|프로젝트 [①②])/],
   ['py-ref-lib', /^(모듈·표준|이터레이터|데코레이터|파일 입출력|알고리즘|재귀·자료구조|프로젝트|람다 [②③④]|9강 딕셔너리|딕셔너리|7강 리스트)/],
+  ['py-ref-error', /^(예외 처리|함수 오류 고치기|심화 퀴즈 ⑤|워크북 1장|10강 개념 퀴즈|11강 개념 퀴즈|함수·클래스|dataclass)/],
   ['py-ref-oop', /^(클래스 |11강|dataclass|예외 처리 심화|함수·클래스|프로젝트 ③|심화 퀴즈 ⑤)/],
   ['ds-ref-numpy', /^(ML |DL |통계|머신러닝|딥러닝)/],
   ['ds-ref-pandas', /^(데이터 분석|데이터 정제)/],
