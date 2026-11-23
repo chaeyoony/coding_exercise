@@ -44,7 +44,9 @@ check('다음 문제 버튼이 항상 보임', (await page.locator('#nextbtn').c
 // 홈: 이어하기 버튼, 카드 글자 넘침 없음
 await page.goto(base);
 await page.waitForSelector('.card .play');
-check('홈 카드마다 이어하기 버튼이 있음', (await page.locator('.card .play').count()) === 4);
+check('홈 카드마다 이어하기 버튼이 있음', (await page.locator('.card .play').count()) === 5);
+check('파이썬 카드는 코딩/퀴즈 진행률이 따로 보임', /코딩 문제 \d+ \/ \d+/.test(await page.locator('.card').nth(1).innerText()) && /퀴즈 \d+ \/ \d+/.test(await page.locator('.card').nth(1).innerText()));
+check('파이썬 카드에 코딩·퀴즈 이어하기 버튼이 따로 있음', (await page.locator('.card').nth(1).locator('.play').count()) === 2);
 const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 2);
 check('홈 화면이 가로로 넘치지 않음', !overflow);
 await page.locator('.card .play').nth(1).click();

@@ -113,10 +113,17 @@ function orderedList(trackId, kind) {
   return list.map((p, i) => [p, i]).sort((a, b) => (a[0].level - b[0].level) || ((rank[a[0].category] ?? 99) - (rank[b[0].category] ?? 99)) || (a[1] - b[1])).map(x => x[0]);
 }
 
-function continueTarget(trackId) {
-  const last = store.getLast(trackId);
-  const lastP = last ? INDEX.find(p => p.id === last) : null;
-  const list = orderedList(trackId, lastP ? kindOf(lastP) : trackKind(trackId));
+// 마지막으로 연 문제는 (언어, 종류)별로 기억한다: 코딩은 기존 키(언어), 퀴즈는 '언어:quiz'
+const lastKey = p => (kindOf(p) === 'quiz' ? `${p.track}:quiz` : p.track);
+function continueTarget(trackId, kind) {
+  const ks = trackKinds(trackId);
+  kind = kind || (ks.includes('code') ? 'code' : ks[0] || 'code');
+  const find = id => (id ? INDEX.find(p => p.id === id) : null);
+  let lastP = find(store.getLast(kind === 'quiz' ? `${trackId}:quiz` : trackId));
+  if (!lastP && kind === 'quiz') { const legacy = find(store.getLast(trackId)); if (legacy && kindOf(legacy) === 'quiz') lastP = legacy; }
+  if (lastP && kindOf(lastP) !== kind) lastP = null;
+  const last = lastP ? lastP.id : null;
+  const list = orderedList(trackId, kind);
   if (!list.length) return null;
   const i = last ? list.findIndex(p => p.id === last) : -1;
   if (i >= 0) {
@@ -182,13 +189,19 @@ function renderHome() {
     <h1>코딩 연습장</h1>
     <p class="muted">SQL · 파이썬 · 데이터사이언스 · R. 코드는 이 브라우저 안에서 실행돼요. PC와 아이패드 모두 사용할 수 있어요.</p>
     <div class="cards">${TRACKS.map(t => {
-      const { done, total } = progress(t.id);
-      const c = continueTarget(t.id);
+      const ks = trackKinds(t.id);
+      const KN = { code: '코딩 문제', quiz: '퀴즈' };
+      const split = ks.length > 1;            // 코딩과 퀴즈가 함께 있는 언어는 진행률·이어하기를 따로 보여 준다
+      const rows = (split ? ks : [null]).map(k => {
+        const list = INDEX.filter(p => p.track === t.id && (!k || kindOf(p) === k));
+        const done = list.filter(p => store.isSolved(p.id)).length;
+        return { k, done, total: list.length, pct: list.length ? 100 * done / list.length : 0 };
+      });
       return `<div class="card"><a class="cardlink" href="#/t/${t.id}"><div class="ico">${t.icon}</div><h3>${esc(t.name)}</h3>
         <div class="muted">${esc(t.desc)}</div>
-        <div class="bar"><i style="width:${total ? (100 * done / total) : 0}%"></i></div>
-        <div class="muted" style="font-size:.85rem;margin-top:4px">${done} / ${total} 해결</div></a>
-        ${c ? `<a class="play" href="#/p/${c.p.id}" title="${esc(c.p.title)}">▶ ${c.label}<span class="ptitle">${esc(c.p.title)}</span></a>` : ''}</div>`;
+        ${rows.map(r => `<div class="kindrow"><div class="bar"><i style="width:${r.pct}%"></i></div>
+        <div class="muted" style="font-size:.85rem;margin-top:4px">${split ? `<b>${KN[r.k] || r.k}</b> ` : ''}${r.done} / ${r.total} 해결 (${Math.round(r.pct)}%)</div></div>`).join('')}</a>
+        ${rows.map(r => { const c = continueTarget(t.id, r.k || undefined); return c ? `<a class="play" href="#/p/${c.p.id}" title="${esc(c.p.title)}">▶ ${split ? (KN[r.k] || r.k) + ' ' : ''}${c.label}<span class="ptitle">${esc(c.p.title)}</span></a>` : ''; }).join('')}</div>`;
     }).join('')}</div>
     ${syncBox()}
     <p><a class="notehome" href="#/n">📒 기초 노트 모음 — 막힐 때 펼쳐 보는 코드 정리 (${NOTES.length}개)</a></p>
@@ -346,7 +359,7 @@ async function renderProblem(id) {
   const list = orderedList(p.track, kindOf(p));
   const pos = list.findIndex(x => x.id === id);
   const prev = list[pos - 1], next = list[pos + 1];
-  store.setLast(p.track, id);
+  store.setLast(lastKey(p), id);
   const initial = store.getCode(id) ?? p.starter;
   const dsHtml = await datasetPanel(p);
 
@@ -504,7 +517,7 @@ async function renderQuiz(p) {
   const list = orderedList(p.track, kindOf(p));
   const pos = list.findIndex(x => x.id === id);
   const prev = list[pos - 1], next = list[pos + 1];
-  store.setLast(p.track, id);
+  store.setLast(lastKey(p), id);
   const ox = p.quiz.choices.length === 2 && p.quiz.choices[0] === '참';
   const choices = p.quiz.choices.map((c, i) => `<label class="qchoice"><input type="radio" name="qc" value="${i}"><span>${ox ? '' : `${i + 1}. `}${esc(c)}</span></label>`).join('');
   $app.innerHTML = `
