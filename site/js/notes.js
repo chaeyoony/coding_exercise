@@ -1,4 +1,5 @@
 // 기초 노트: 문제를 풀다가 막힐 때 펼쳐 보는 코드 정리. 문제 화면에서 단원(카테고리)에 맞는 노트로 연결된다.
+import { WHEN } from './notes_when.js';
 const n = (id, track, title, html) => ({ id, track, title, html });
 
 const BASE_NOTES = [
@@ -1242,7 +1243,22 @@ SUM(x) OVER (ORDER BY d)                 -- 누적합</pre>
 
 // 단원(카테고리) → 참고 노트
 const P = ['py-basics'], S = ['py-str'], C = ['py-containers'];
-export const NOTES = BASE_NOTES;
+// 각 소제목 끝에 "언제 쓰나요?" 설명(notes_when.js)을 붙인다
+const escH = t => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const decH = t => t.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+function withWhen(note) {
+  const w = WHEN[note.id];
+  if (!w) return note;
+  const html = note.html.split(/(?=<h3>)/).map(part => {
+    const m = part.match(/^<h3>(.*?)<\/h3>/);
+    const items = w[m ? decH(m[1]) : ''];
+    if (!items) return part;
+    const block = `<div class="when"><b>💡 언제 쓰나요?</b><ul>${items.map(([a, b]) => `<li><code>${escH(a)}</code> — ${escH(b)}</li>`).join('')}</ul></div>\n`;
+    return part.replace(/\s*$/, '\n') + block;
+  }).join('');
+  return { ...note, html };
+}
+export const NOTES = BASE_NOTES.map(withWhen);
 export const CATEGORY_NOTES = {
   "기초 조회": ["sql-basics"],
   "집계": ["sql-basics","sql-join-agg"],

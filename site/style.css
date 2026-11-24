@@ -147,3 +147,7 @@ kbd{border:1px solid var(--line);border-radius:4px;padding:0 .35em;font-size:.85
 
 .card .kindrow { margin-top: 6px; }
 .card .play + .play { margin-top: -2px; }
+
+.note .when { margin: .4rem 0 1rem; padding: .6rem .9rem; border-left: 4px solid #f0b429; background: rgba(240, 180, 41, .10); border-radius: 0 8px 8px 0; font-size: .93em; }
+.note .when ul { margin: .35rem 0 0; padding-left: 1.2rem; }
+.note .when li { margin: .2rem 0; }
