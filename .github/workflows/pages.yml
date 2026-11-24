@@ -15,16 +15,23 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      # 큰 파일(약 100MB)은 업로드 직후 GitHub 목록에 늦게 나타나 "artifact를 못 찾음" 오류가 날 수 있어 잠시 기다린다
+      - run: sleep 45
       - id: deployment
         uses: actions/deploy-pages@v4
