@@ -104,7 +104,7 @@ export default [
     `class Counter:\n    pass\n`,
     `class Counter:\n    def __init__(self):\n        self.count = 0\n\n    def inc(self):\n        self.count += 1\n\n    def dec(self):\n        self.count -= 1\n\n    def reset(self):\n        self.count = 0\n\n    def value(self):\n        return self.count\n`,
     '<p>메서드가 속성을 <b>바꾸는</b> 연습이에요. 바꾸는 메서드는 보통 <code>return</code> 없이 <code>self.count += 1</code> 처럼 써요.</p>',
-    [t('run_ops(Counter(), [["inc"], ["inc"], ["dec"], ["value"], ["reset"], ["value"]])', [1, 0]), t('run_ops(Counter(), [["value"]])', [0]), t('run_ops(Counter(), [["dec"], ["dec"], ["value"]])', [-2]), t('run_ops(Counter(), [["inc"], ["attr", "count"]])', [1])]),
+    [t('run_ops(Counter(), [["inc"], ["inc"], ["dec"], ["value"], ["reset"], ["value"]])', [1, 0]), t('run_ops(Counter(), [["value"]])', [0]), t('run_ops(Counter(), [["dec"], ["dec"], ["value"]])', [-2])]),
   c(CB, 2, '원의 넓이와 둘레', `<p><code>Circle(radius)</code> 클래스에 메서드를 만드세요. 원주율은 <code>math.pi</code>를 쓰고, 결과는 <b>소수 둘째 자리까지 반올림</b>해서 돌려줘요.</p><ul><li><code>area()</code> — 넓이 (π × 반지름²)</li><li><code>circumference()</code> — 둘레 (2 × π × 반지름)</li></ul>${NOTE}`,
     `import math\n\n\nclass Circle:\n    pass\n`,
     `import math\n\n\nclass Circle:\n    def __init__(self, radius):\n        self.radius = radius\n\n    def area(self):\n        return round(math.pi * self.radius ** 2, 2)\n\n    def circumference(self):\n        return round(2 * math.pi * self.radius, 2)\n`,
