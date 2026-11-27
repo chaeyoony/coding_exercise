@@ -6,6 +6,7 @@ const X1 = '예외 처리 ① try-except 기본';
 const X2 = '예외 처리 ② 여러 오류·as e';
 const X3 = '예외 처리 ③ else·finally·raise';
 const X4 = '예외 처리 ④ 입력 검증·작은 프로젝트';
+const XQ = '예외 처리 출력 예측 퀴즈';   // 출력 예측은 코드를 짜는 문제가 아니라 퀴즈로 분류된다
 
 const SETUP = `def raises(fn):
     try:
@@ -57,10 +58,10 @@ export default [
     solution: `while True:\n    s = input("정수: ")\n    try:\n        n = int(s)\n        break\n    except ValueError:\n        print("다시 입력하세요")\nprint("입력한 수:", n)\n`,
     hint: '<p>성공했을 때 <code>break</code>로 반복을 빠져나와요. <code>except</code>에서는 안내만 출력하고 반복이 계속돼요.</p>',
     cases: [INP('abc', '12'), INP('7'), INP('', '3.5', 'x', '-4')], needs: [['while', 'while 반복을 써 보세요'], ['try\\s*:', 'try 를 써 보세요']] }),
-  pr({ category: X1, level: 1, title: '출력 예측: 오류가 나면 어디로 갈까?',
+  pr({ category: XQ, level: 1, title: '출력 예측: 오류가 나면 어디로 갈까?',
     code: `print("시작")\ntry:\n    print("A")\n    x = 10 / 0\n    print("B")\nexcept ZeroDivisionError:\n    print("C")\nprint("끝")\n`,
     explain: '<p><code>10 / 0</code>에서 오류가 나는 순간 <code>try</code> 블록의 <b>나머지(B)는 건너뛰고</b> <code>except</code>로 가요. 그 뒤는 정상적으로 이어져서 <code>끝</code>이 출력돼요.</p>' }),
-  pr({ category: X1, level: 2, title: '출력 예측: except가 맞지 않으면?',
+  pr({ category: XQ, level: 2, title: '출력 예측: except가 맞지 않으면?',
     code: `def show(x):\n    try:\n        print(10 // x)\n    except ZeroDivisionError:\n        print("zero")\n    print("done", x)\n\nshow(5)\nshow(0)\nshow(3)\n`,
     explain: '<p><code>show(0)</code>은 <code>ZeroDivisionError</code>를 잡아서 <code>zero</code>를 출력하고, <code>try</code> 문이 끝난 뒤 <code>done 0</code>이 이어서 출력돼요. 함수 밖으로 오류가 나가지 않으니 <code>show(3)</code>도 실행돼요.</p>' }),
 
@@ -85,7 +86,7 @@ export default [
     f('get_path(d, keys)'), `def get_path(d, keys):\n    try:\n        for k in keys:\n            d = d[k]\n        return d\n    except (KeyError, TypeError):\n        return None\n`,
     '<p>두 오류를 한 번에 잡으려면 튜플로 묶어요: <code>except (KeyError, TypeError):</code></p>',
     [t('get_path({"a": {"b": 5}}, ["a", "b"])', 5), t('get_path({"a": 1}, ["b"])', null), t('get_path({"a": 1}, ["a", "b"])', null), t('get_path({"a": {"b": {"c": 0}}}, ["a", "b", "c"])', 0), t('get_path({"a": 1}, [])', { a: 1 })]),
-  pr({ category: X2, level: 3, title: '출력 예측: 어느 except가 실행될까?',
+  pr({ category: XQ, level: 3, title: '출력 예측: 어느 except가 실행될까?',
     code: `def run(x):\n    try:\n        return 10 / int(x)\n    except ZeroDivisionError:\n        return "zero"\n    except ValueError as e:\n        return "bad"\n    except Exception:\n        return "other"\n\nprint(run("2"))\nprint(run("0"))\nprint(run("a"))\nprint(run(None))\n`,
     explain: '<p><code>run("2")</code>는 정상이라 <code>5.0</code>. <code>"0"</code>은 <code>ZeroDivisionError</code>라서 <code>zero</code>. <code>"a"</code>는 <code>int("a")</code>가 <code>ValueError</code>라서 <code>bad</code>. <code>None</code>은 <code>int(None)</code>이 <code>TypeError</code>인데, 앞 두 except에 안 맞으니 마지막 <code>Exception</code>에서 잡혀 <code>other</code>가 나와요.</p>' }),
 
@@ -108,7 +109,7 @@ export default [
     f('safe_div_logged(a, b, log)'), `def safe_div_logged(a, b, log):\n    try:\n        return a / b\n    except ZeroDivisionError:\n        return None\n    finally:\n        log.append("done")\n`,
     '<p><code>finally</code>는 <code>return</code>으로 함수를 나가기 직전에도 실행돼요.</p>',
     [t('safe_div_logged(6, 3, [])', 2), t('safe_div_logged(1, 0, [])', null), t('(lambda L: (safe_div_logged(1, 0, L), safe_div_logged(4, 2, L), L))([])', [null, 2, ['done', 'done']]), t('(lambda L: (safe_div_logged(8, 2, L), L))([])[1]', ['done'])]),
-  pr({ category: X3, level: 3, title: '출력 예측: return과 finally',
+  pr({ category: XQ, level: 3, title: '출력 예측: return과 finally',
     code: `def f(n):\n    try:\n        if n < 0:\n            raise ValueError("neg")\n        return "ok"\n    except ValueError:\n        return "error"\n    finally:\n        print("finally", n)\n\nprint(f(1))\nprint(f(-1))\n`,
     explain: '<p><code>f(1)</code>: <code>return "ok"</code>로 나가기 <b>직전에</b> <code>finally</code>가 실행돼 <code>finally 1</code>이 먼저 출력되고, 그 다음 <code>print</code>가 <code>ok</code>를 출력해요. <code>f(-1)</code>도 같은 순서로 <code>finally -1</code> → <code>error</code>예요.</p>' }),
 

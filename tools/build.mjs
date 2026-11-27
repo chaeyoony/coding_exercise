@@ -55,5 +55,5 @@ const list = results.map(r => withHints(r.pub)).sort((a, b) => {
   return 0;
 });
 for (const p of list) fs.writeFileSync(path.join(outDir, p.id + '.json'), JSON.stringify(p));
-fs.writeFileSync(path.join(outDir, 'index.json'), JSON.stringify({ problems: list.map(p => ({ id: p.id, track: p.track, category: p.category, level: p.level, title: p.title, kind: p.quiz ? 'quiz' : 'code' })) }));
+fs.writeFileSync(path.join(outDir, 'index.json'), JSON.stringify({ problems: list.map(p => ({ id: p.id, track: p.track, category: p.category, level: p.level, title: p.title, kind: (p.quiz || p.predict) ? 'quiz' : 'code' })) }));
 console.log(`\n문제 ${list.length}개 검증 통과 → site/problems 생성 완료`);

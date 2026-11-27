@@ -227,7 +227,7 @@ function renderHome() {
 }
 
 // ---------- 트랙 목록 ----------
-const kindOf = p => p.kind || (p.quiz ? 'quiz' : 'code');
+const kindOf = p => p.kind || ((p.quiz || p.predict) ? 'quiz' : 'code');
 const view = { level: 0, unsolved: false, get mode() { return store.getPref('mode', (() => { try { return localStorage.getItem('pp:mode') || 'cat'; } catch (e) { return 'cat'; } })()); }, set mode(v) { store.setPref('mode', v); } };   // 목록 필터 (페이지를 옮겨도 유지)
 
 function renderTrack(id) {

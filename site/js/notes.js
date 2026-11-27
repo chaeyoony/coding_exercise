@@ -1310,6 +1310,7 @@ export const CATEGORY_NOTES = {
   "이터레이터·제너레이터": ["py-iter-deco"],
   "데코레이터·클로저": ["py-iter-deco","py-lambda"],
   "예외 처리 심화": ["py-err-lib"],
+  "예외 처리 출력 예측 퀴즈": ["py-err-lib"],
   "모듈·표준 라이브러리": ["py-err-lib"],
   "파일 입출력": ["py-err-lib"],
   "dataclass·타입 힌트": ["py-err-lib","py-class"],
