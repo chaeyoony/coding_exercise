@@ -63,6 +63,15 @@ await page.goto(base.replace('#/', '#/t/python'));
 await page.waitForSelector('[data-mode="level"]');
 await page.click('[data-mode="level"]');
 check('난이도순 보기가 열림', (await page.locator('details.cat summary').first().innerText()).includes('난이도'));
+// 출력 예측 문제가 열리고 정답을 적으면 통과함
+await page.goto(base + 'p/py-810');
+await page.waitForSelector('#code');
+check('출력 예측 문제 화면이 열림', (await page.innerText('#app')).includes('코드'));
+await page.fill('#code', '시작\nA\nC\n끝');
+await page.click('#submit');
+await page.waitForTimeout(800);
+check('출력 예측 정답 제출 시 맞았다고 나옴', (await page.innerText('#result')).includes('맞았어요'));
+
 // 기초 노트
 await page.goto(base + 'n/py-lambda');
 await page.waitForSelector('.note');

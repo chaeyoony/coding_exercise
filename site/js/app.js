@@ -298,7 +298,7 @@ async function datasetPanel(p) {
 }
 
 function expectedPanel(p) {
-  if (p.tests || !p.expected) return '';
+  if (p.tests || p.predict || !p.expected || !p.expected.rows) return '';
   return `<details><summary>예상 결과 보기 (${p.expected.rows.length}행)</summary>
     ${tableHtml(p.expected, 10)}
     <div class="muted" style="font-size:.85rem">열 이름은 달라도 괜찮아요. 값과 ${p.ordered ? '순서' : '행 내용'}만 비교해요.</div></details>`;
