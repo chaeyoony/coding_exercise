@@ -39,6 +39,14 @@ def flaky(n_fail):
     return f
 
 
+def fresh(path):
+    # 이어 쓰기(a) 테스트가 실행할 때마다 파일이 쌓이지 않도록, 테스트 시작 전에 파일을 지운다
+    import os
+    if os.path.exists(path):
+        os.remove(path)
+    return path
+
+
 def counter_fn():
     state = {"n": 0}
 
@@ -290,7 +298,7 @@ export default [
   w(FI, 2, '파일 끝에 한 줄 추가하기', `<p>두 함수를 만드세요.</p><ol><li><code>append_line(path, line)</code> — 파일 <b>끝에</b> 한 줄을 추가해요(<code>"a"</code> 모드). 파일이 없으면 새로 만들어요. 줄 끝에 줄바꿈을 붙여요</li><li><code>read_lines(path)</code> — 줄바꿈을 뺀 문자열 리스트로 읽어요</li></ol>`,
     `def append_line(path, line):\n    pass\n\n\ndef read_lines(path):\n    pass\n`, `def append_line(path, line):\n    with open(path, "a", encoding="utf-8") as f:\n        f.write(line + "\\n")\n\n\ndef read_lines(path):\n    with open(path, "r", encoding="utf-8") as f:\n        return [line.rstrip("\\n") for line in f]\n`,
     '<p><code>"w"</code>는 덮어쓰기, <code>"a"</code>(append)는 이어 붙이기예요.</p>',
-    [t('(append_line("t_a1.txt", "첫째"), append_line("t_a1.txt", "둘째"), read_lines("t_a1.txt"))[2]', ['첫째', '둘째']), t('(append_line("t_a2.txt", "x"), read_lines("t_a2.txt"))[1]', ['x']), t('(append_line("t_a3.txt", "a"), append_line("t_a3.txt", "b"), append_line("t_a3.txt", "c"), len(read_lines("t_a3.txt")))[3]', 3), t('(append_line("t_a4.txt", ""), read_lines("t_a4.txt"))[1]', [''])]),
+    [t('(fresh("t_a1.txt"), append_line("t_a1.txt", "첫째"), append_line("t_a1.txt", "둘째"), read_lines("t_a1.txt"))[3]', ['첫째', '둘째']), t('(fresh("t_a2.txt"), append_line("t_a2.txt", "x"), read_lines("t_a2.txt"))[2]', ['x']), t('(fresh("t_a3.txt"), append_line("t_a3.txt", "a"), append_line("t_a3.txt", "b"), append_line("t_a3.txt", "c"), len(read_lines("t_a3.txt")))[4]', 3), t('(fresh("t_a4.txt"), append_line("t_a4.txt", ""), read_lines("t_a4.txt"))[2]', [''])]),
   w(FI, 3, '파일의 줄 수와 단어 수', `<p>텍스트 파일에 대해 <b>[줄 수, 단어 수]</b>를 리스트로 돌려주는 함수 <code>file_stats(path)</code>를 만드세요. 단어는 공백(여러 개 포함)으로 구분해요. 비어 있는 파일은 <code>[0, 0]</code>이에요.</p>`,
     f('file_stats(path)'), `def file_stats(path):\n    lines = 0\n    words = 0\n    with open(path, "r", encoding="utf-8") as f:\n        for line in f:\n            lines += 1\n            words += len(line.split())\n    return [lines, words]\n`,
     '<p>파일을 한 줄씩 돌면서 줄 수를 세고, 각 줄을 <code>split()</code>한 길이를 더해요.</p>',
